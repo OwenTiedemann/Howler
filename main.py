@@ -7,7 +7,7 @@ import motor.motor_asyncio
 intents = discord.Intents.default()
 
 bot = commands.Bot(command_prefix=['howler '], intents=intents)
-database_client = motor.motor_asyncio.AsyncIOMotorClient('mongodb+srv://user-111:EF6qouPRcpdDTNRS@cluster0.tupi0.mongodb.net/database?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE')
+database_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongo_db_token)
 bot.database = database_client['ArizonaCoyotesDiscord']
 
 initial_extensions = ['cogs.TweetBot']
