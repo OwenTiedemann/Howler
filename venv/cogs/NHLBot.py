@@ -22,17 +22,21 @@ class NHLBot(commands.Cog):
     async def getTeamID(self, team: str, year: int):
         if team == None:
             return None
-        elif team == "Calgary Flames":
+        elif team == "Calgary Flames" or team == "CGY":
             return 20
-        elif team == "Arizona Coyotes":
+        elif team == "Arizona Coyotes" or team == "ARI" or team == "PHX":
             if year < 2014 and year > 1995:
                 return 27
             elif year < 1996:
                 return 33
             else:
                 return 53
-        elif team == "Arizona Coyotes" and year < 2014:
-            return 27
+        elif team == "Anaheim Ducks" or team == "ANA":
+            pass
+        elif team == "New Jersey Devils" or team == "NJD":
+            return 1
+        elif team == "New York Islanders" or team == "NYI":
+            return 2
 
     async def get_nhl_draft_url(self, year, round, teamID):
         if teamID == None and round == 0:

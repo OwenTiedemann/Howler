@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands, tasks
 import tweepy
 import motor.motor_asyncio
+import json
 
 channel_list = []
 name_list = []
@@ -18,8 +19,12 @@ api = tweepy.API(auth)
 
 class MyStreamListener(tweepy.StreamListener):
 
-    def on_status(self, status): #adds status to list
+    #def on_status(self, status): #adds status to list
+        #status_list.append(status)
+
+    def on_data(self, status):
         status_list.append(status)
+
 
     def on_error(self, status_code):
         print('ERROR: ' + str(status_code)) #prints error code on error, mostly rate limited
@@ -71,24 +76,25 @@ class TweetBot(commands.Cog):
 
         run_stream()
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=1)
     async def check_status(self):
         if status_list:
             status = status_list[0] #pulls first item from list
             status_list.pop(0) #deletes it from list
-            print(status.user.name)
-            if str(status.user.id) in id_list: #checks if user is one of followed feeds
+            tweet = json.loads(status)
+            if str(tweet['user']['id']) in id_list: #checks if user is one of followed feeds
+                print(tweet['user'])
                 for user in user_list: #finds the user object
-                    if str(status.user.id) == user.user_id:
-                        user.status = status #sets the objects status
+                    if str(tweet['user']['id']) == user.user_id:
+                        user.status = tweet #sets the objects status
                         break #ends loop
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=5)
     async def post_tweet(self):
         for user in user_list: #goes through all followed feeds
             if user.status != user.old_status: #checks if there is a new tweet
                 channel = self.bot.get_channel(int(user.channel)) #gets channel
-                await channel.send('https://twitter.com/twitter/statuses/' + str(user.status.id)) #posts tweet
+                await channel.send('https://twitter.com/twitter/statuses/' + str(user.status['id'])) #posts tweet
                 user.old_status = user.status #updates old tweet
 
     @post_tweet.before_loop
@@ -161,8 +167,6 @@ class TweetBot(commands.Cog):
     async def _list(self, ctx):
         s = "\n"
         name_list_string = s.join(name_list)
-
-        print(name_list_string)
 
         embed = discord.Embed(
             title="Twitter Feeds",
