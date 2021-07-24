@@ -78,16 +78,19 @@ class TweetBot(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def check_status(self):
-        if status_list:
-            status = status_list[0] #pulls first item from list
-            status_list.pop(0) #deletes it from list
-            tweet = json.loads(status)
-            if str(tweet['user']['id']) in id_list: #checks if user is one of followed feeds
-                print(tweet['user'])
-                for user in user_list: #finds the user object
-                    if str(tweet['user']['id']) == user.user_id:
-                        user.status = tweet #sets the objects status
-                        break #ends loop
+        try:
+            if status_list:
+                status = status_list[0] #pulls first item from list
+                status_list.pop(0) #deletes it from list
+                tweet = json.loads(status)
+                if str(tweet['user']['id']) in id_list: #checks if user is one of followed feeds
+                    print(tweet['user'])
+                    for user in user_list: #finds the user object
+                        if str(tweet['user']['id']) == user.user_id:
+                            user.status = tweet #sets the objects status
+                            break #ends loop
+        except:
+            print("ERROR " + str(tweet))
 
     @tasks.loop(seconds=5)
     async def post_tweet(self):
@@ -138,7 +141,9 @@ class TweetBot(commands.Cog):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("You do not have permission to use this command!")
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send("This command is on cooldown, try again later.")
+            await ctx.send(f"This command is on cooldown, try again later. {str(round(error.retry_after, 1))} seconds left!")
+        else:
+            await ctx.send(error)
 
     @twitter.command(name="remove", brief="Remove a Twitter feed")
     @commands.cooldown(1, 30, commands.BucketType.user)
@@ -161,7 +166,9 @@ class TweetBot(commands.Cog):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("You do not have permission to use this command!")
         elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send("This command is on cooldown, try again later.")
+            await ctx.send(f"This command is on cooldown, try again later. {str(round(error.retry_after, 0))} seconds left!")
+        else:
+            await ctx.send(error)
 
     @twitter.command(name="list", brief="Show list of all Twitter feeds")
     async def _list(self, ctx):

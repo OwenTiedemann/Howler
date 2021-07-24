@@ -37,6 +37,14 @@ class NHLBot(commands.Cog):
             return 1
         elif team == "New York Islanders" or team == "NYI":
             return 2
+        elif team == "New York Rangers" or team == "NYR":
+            return 3
+        elif team == "Philadelphia Flyers" or team == "PHI":
+            return 4
+        elif team == "Pittsburgh Penguins" or team == "PIT":
+            return 5
+        elif team == "Boston Bruins" or team == "BOS":
+            return 6
 
     async def get_nhl_draft_url(self, year, round, teamID):
         if teamID == None and round == 0:
@@ -45,6 +53,8 @@ class NHLBot(commands.Cog):
             return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}'
         elif teamID == None:
             return f'https://records.nhl.com/site/api/draft?cayenneExp=draftYear={year}%20and%20roundNumber={round}'
+        else:
+            return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}%20and%20roundNumber={round}'
 
     @nhl.command()
     async def draft(self, ctx, year: int, round=0, team=None):
@@ -88,6 +98,11 @@ class NHLBot(commands.Cog):
                 description=players
             )
         await ctx.send(embed=embed)
+
+
+    @draft.error
+    async def draft_error(self, ctx, error):
+        await ctx.send(error)
 
 
 def setup(bot):
