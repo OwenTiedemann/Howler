@@ -34,6 +34,9 @@ class Skater:
         self.plus_minus = 0
         self.points = 0
 
+    def get_shooting_percentage(self):
+        return (self.goals / self.shots) * 100
+
 class Goalie:
     def __init__(self, name, position):
         self.name = name
@@ -77,19 +80,22 @@ class NHLBot(commands.Cog):
     async def getTeamID(self, team: str, year: int):
         if team == None:
             return None
-        elif team == "Calgary Flames" or team == "CGY":
-            return 20
-        elif team == "Arizona Coyotes" or team == "ARI" or team == "PHX":
-            if year < 2014 and year > 1995:
-                return 27
-            elif year < 1996:
-                return 33
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
+                res = await r.json()
+                for items in res['teams']:
+                    if items['name'] == team or items['abbreviation'] == team:
+                        print(items['id'])
+                        return int(items['id'])
+
+        if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" or team == "Kansas City Scouts" or team == "KCS":
+            if year < 1976:
+                return 48
+            elif year < 1982:
+                return 35
             else:
-                return 53
-        elif team == "Anaheim Ducks" or team == "ANA":
-            pass
-        elif team == "New Jersey Devils" or team == "NJD":
-            return 1
+                return 1
         elif team == "New York Islanders" or team == "NYI":
             return 2
         elif team == "New York Rangers" or team == "NYR":
@@ -100,6 +106,117 @@ class NHLBot(commands.Cog):
             return 5
         elif team == "Boston Bruins" or team == "BOS":
             return 6
+        elif team == "Buffalo Sabres" or team == "BUF":
+            return 7
+        elif team == "Montreal Canadiens" or team == "MTL":
+            return 8
+        elif team == "Ottawa Senators" or team == "OTT" or team == "St Louis Eagles" or team == "SLE":
+            if year < 1934:
+                return 36
+            elif year < 1935:
+                return 45
+            else:
+                return 9
+        elif team == "Toronto Maple Leafs" or team == "TOR":
+            return 10
+
+        elif team == "Atlanta Thrashers" or team == "ATL" or team == "Winnipeg Jets" or team == "WIN":
+            if year < 2011:
+                return 11
+            else:
+                return 52
+
+        elif team == "Carolina Hurricanes" or team == "CAR" or team == "Hartford Whalers" or team == "HFD":
+            if year < 1997:
+                return 34
+            else:
+                return 12
+        elif team == "Florida Panthers" or team == "FLA":
+            return 13
+        elif team == "Tampa Bay Lightning" or team == "TBL":
+            return 14
+        elif team == "Washington Capitols" or team == "WSH":
+            return 15
+        elif team == "Chicago Blackhawks" or team == "CHI":
+            return 16
+        elif team == "Detroit Red Wings" or team == "DET" or team == "Detroit Cougars" or team == "DCG" or team == "Detroit Falcons" or team == "DFL":
+            if year < 1930:
+                return 40
+            elif year < 1932:
+                return 50
+            else:
+                return 17
+        elif team == "Nashville Predators" or team == "NSH":
+            return 18
+        elif team == "St Louis Blues" or team == "STL":
+            return 19
+        elif team == "Calgary Flames" or team == "CGY" or team == "Atlanta Flames" or team == "AFM":
+            if year < 1980:
+                return 47
+            else:
+                return 20
+        elif team == "Colorado Avalanche" or team == "COL" or team == "Quebec Nordiques" or team == "QUE":
+            if year < 1995:
+                return 32
+            else:
+                return 21
+        elif team == "Edmonton Oilers" or team == "EDM":
+            return 22
+        elif team == "Vancouver Canucks" or team == "VAN":
+            return 23
+        elif team == "Anaheim Ducks" or team == "ANA":
+            return 24
+        elif team == "Dallas Stars" or team == "DAL" or team == "Minnesota North Stars" or team == "MNS":
+            if year < 1993:
+                return 31
+            else:
+                return 25
+        elif team == "Los Angeles Kings" or team == "LAK":
+            return 26
+        elif team == "Arizona Coyotes" or team == "ARI" or team == "PHX":
+            if year < 2014 and year > 1995:
+                return 27
+            elif year < 1996:
+                return 33
+            else:
+                return 53
+        elif team == "San Jose Sharks" or team == "SJS":
+            return 28
+        elif team == "Columbus Blue Jackets" or team == "CBJ":
+            return 29
+        elif team == "Minnesota Wild" or team == "MIN":
+            return 30
+        elif team == "Hamilton Tigers" or team == "HAM" or team == "Quebec Bulldogs" or team == "QBD":
+            if year < 1920:
+                return 42
+            return 37
+        elif team == "Pittsburgh Pirates" or team == "PIR" or team == "Philedelphia Quakers" or team == "QUA":
+            if year < 1930:
+                return 39
+            else:
+                return 38
+        elif team == "Montreal Wanderers" or team == "MWN":
+            return 41
+        elif team == "Montreal Maroons" or team == "MMN":
+            return 43
+        elif team == "New York Americans" or team == "NYA" or team == "Brooklyn Americans" or team == "BRK":
+            if year < 1941:
+                return 44
+            else:
+                return 51
+        elif team == "Oakland Seals" or team == "OAK" or team == "Cleveland Barons" or team == "CLE":
+            if year < 1970:
+                return 46
+            else:
+                return 49
+        elif team == "Vegas Golden Knights" or team == "VGK":
+            return 54
+        elif team == "Seattle Kraken" or team == "SEA":
+            return 55
+
+
+
+
 
     async def get_nhl_draft_url(self, year, round, teamID):
         if teamID == None and round == 0:
@@ -129,7 +246,6 @@ class NHLBot(commands.Cog):
                             pass
                         else:
                             for player in values:
-                                print(player)
                                 x = Player(player['firstName'], player['lastName'], player['position'], player['roundNumber'], player['overallPickNumber'], player['teamPickHistory'])
                                 player_list.append(x)
 
@@ -137,45 +253,212 @@ class NHLBot(commands.Cog):
 
         if team == None:
             for player in player_list:
-                players += f"{player.position} {player.firstName} {player.lastName}: pick {player.pick}: {player.team}" + "\n"
+                players += f"Pick: {player.pick:3}  Team: {player.team:10}\n Player: {player.position} {player.firstName} {player.lastName} \n \n"
 
             embed = discord.Embed(
                 title=f"{year} NHL Draft: Round {round}",
                 description=players
             )
+
         elif round == 0:
-            for player in player_list:
-                players += f"{player.position} {player.firstName} {player.lastName}: pick {player.pick}: round {player.round}: {player.team}" + "\n"
+                #players += f"Pick: {player.pick} Round: {player.round} \n Player: {player.firstName} {player.lastName} \n \n"
 
             embed = discord.Embed(
                 title=f"{team} {year} NHL Draft",
-                description=players
             )
-        else:
             for player in player_list:
-                players += f"{player.position} {player.firstName} {player.lastName}: pick {player.pick}" + "\n"
+                embed.add_field(name=f"Pick {player.pick}",
+                            value=f"Team: {player.team:10}\n Player: {player.position} {player.firstName} {player.lastName}",
+                            inline=True)
+
+        else:
+
 
             embed = discord.Embed(
                 title=f"{team} {year} draft round {round}",
                 description=players
             )
+
+            for player in player_list:
+                embed.add_field(name=f"Pick {player.pick}",
+                                value=f"Team: {player.team:10}\n Player: {player.position} {player.firstName} {player.lastName}",
+                                inline=True)
+
         await ctx.send(embed=embed)
 
 
-    @draft.error
-    async def draft_error(self, ctx, error):
-        await ctx.send(error)
+    #@draft.error
+    #async def draft_error(self, ctx, error):
+    #    if isinstance(error, commands.MissingRequiredArgument):
+    #        await ctx.send("You're missing an argument, use \"howler help nhl draft\" to see required arguments")
+    #    else:
+    #        await ctx.send(f"ERROR: {error}, you can blame Roman for this, but he doesn't know what happened either. Let him know though.")
 
-    def Convert(lst):
-        res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)}
-        return res_dct
+    def set_goalie_stats(self, x, stats, year):
+        if year > 1954:
+            x.shots_against += stats['stat']['shotsAgainst']
+            x.saves += stats['stat']['saves']
+
+        x.wins += stats['stat']['wins']
+        x.losses += stats['stat']['losses']
+        x.set_minutes(stats['stat']['timeOnIce'])
+        x.goals_against += stats['stat']['goalsAgainst']
+        x.shutouts += stats['stat']['shutouts']
+        x.games_played += stats['stat']['games']
+        x.games_started += stats['stat']['gamesStarted']
+
+        return x
+
+    def set_skater_stats(self, x, stats, year):
+        if year > 1996:
+            x.hits += stats['stat']['hits']
+        if year > 1958:
+            x.plus_minus += stats['stat']['plusMinus']
+            x.shots += stats['stat']['shots']
+        if year > 1932:
+            x.power_play_goals += stats['stat']['powerPlayGoals']
+            x.power_play_points += stats['stat']['powerPlayPoints']
+            x.shorthanded_goals += stats['stat']['shortHandedGoals']
+            x.shorthanded_points += stats['stat']['shortHandedPoints']
+
+        x.goals += stats['stat']['goals']
+        x.assists += stats['stat']['assists']
+        x.pim += stats['stat']['pim']
+        x.games += stats['stat']['games']
+        x.game_winning_goals += stats['stat']['gameWinningGoals']
+        x.overtime_goals += stats['stat']['overTimeGoals']
+        x.points += stats['stat']['points']
+
+        return x
+
+    def set_goalie_embed(self, x, year_start, year_end, type):
+        goals_against_average = x.get_goals_against_average()
+
+        if year_start > 1954:
+            save_percentage = x.get_save_percentage()
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:    {x.games_played}\n"
+                            + f"Wins:            {x.wins}\n"
+                            + f"Losses:          {x.losses}\n"
+                            + f"Shutouts:        {x.shutouts}\n"
+                            + f"Games Played:    {x.games_played}\n"
+                            + f"Games Started:   {x.games_started}\n"
+                            + f"Shots Against:   {x.shots_against}\n"
+                            + f"Saves:           {x.saves}\n"
+                            + f"Goals Against:   {x.goals_against}\n"
+                            + f"Save Percentage: {round(save_percentage, 3)}\n"
+                            + f"GAA:             {round(goals_against_average, 2)}```"
+            )
+        else:
+
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:    {x.games_played}\n"
+                            + f"Wins:            {x.wins}\n"
+                            + f"Losses:          {x.losses}\n"
+                            + f"Shutouts:        {x.shutouts}\n"
+                            + f"Games Played:    {x.games_played}\n"
+                            + f"Games Started:   {x.games_started}\n"
+                            + f"Goals Against:   {x.goals_against}\n"
+                            + f"GAA:             {round(goals_against_average, 2)}```"
+            )
+
+        if type == "career":
+            embed.description = "Career Stats\n" + embed.description
+        elif type == "season":
+            embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
+
+        return embed
+
+    def set_skater_embed(self, x, year_start, year_end, type):
+        if year_start > 1996:
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:       {x.games}\n"
+                            + f"Goals:              {x.goals}\n"
+                            + f"Assists:            {x.assists}\n"
+                            + f"Points:             {x.points}\n"
+                            + f"PIM:                {x.pim}\n"
+                            + f"Hits:               {x.hits}\n"
+                            + f"Shots:              {x.shots}\n"
+                            + f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n"
+                            + f"Power Play Goals:   {x.power_play_goals}\n"
+                            + f"Power Play Points:  {x.power_play_points}\n"
+                            + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
+                            + f"Shorthanded Points: {x.shorthanded_points}\n"
+                            + f"Overtime Goals:     {x.overtime_goals}\n"
+                            + f"Game Winning Goals: {x.game_winning_goals}\n"
+                            + f"Plus/Minus:         {x.plus_minus}```"
+            )
+        elif year_start > 1958:
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:       {x.games}\n"
+                            + f"Goals:              {x.goals}\n"
+                            + f"Assists:            {x.assists}\n"
+                            + f"Points:             {x.points}\n"
+                            + f"PIM:                {x.pim}\n"
+                            + f"Shots:              {x.shots}\n"
+                            + f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n"
+                            + f"Power Play Goals:   {x.power_play_goals}\n"
+                            + f"Power Play Points:  {x.power_play_points}\n"
+                            + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
+                            + f"Shorthanded Points: {x.shorthanded_points}\n"
+                            + f"Overtime Goals:     {x.overtime_goals}\n"
+                            + f"Game Winning Goals: {x.game_winning_goals}\n"
+                            + f"Plus/Minus:         {x.plus_minus}```"
+            )
+        elif year_start > 1932:
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:       {x.games}\n"
+                            + f"Goals:              {x.goals}\n"
+                            + f"Assists:            {x.assists}\n"
+                            + f"Points:             {x.points}\n"
+                            + f"PIM:                {x.pim}\n"
+                            + f"Power Play Goals:   {x.power_play_goals}\n"
+                            + f"Power Play Points:  {x.power_play_points}\n"
+                            + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
+                            + f"Shorthanded Points: {x.shorthanded_points}\n"
+                            + f"Overtime Goals:     {x.overtime_goals}\n"
+                            + f"Game Winning Goals: {x.game_winning_goals}```"
+            )
+        else:
+            embed = discord.Embed(
+                title=x.name,
+                description="```\n"
+                            + f"Games Played:       {x.games}\n"
+                            + f"Goals:              {x.goals}\n"
+                            + f"Assists:            {x.assists}\n"
+                            + f"Points:             {x.points}\n"
+                            + f"PIM:                {x.pim}\n"
+                            + f"Overtime Goals:     {x.overtime_goals}\n"
+                            + f"Game Winning Goals: {x.game_winning_goals}```"
+            )
+        if type == "career":
+            embed.description = "Career Stats\n" + embed.description
+        elif type == "season":
+            embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
+
+        return embed
+
 
     @nhl.command()
     async def player(self, ctx, name, team, season_start_year: int, season_end_year: int, type: str):
-
+        type_list = ["career", "season"]
+        if type not in type_list:
+            await ctx.send("Type must be either \"career\" or \"season\"")
+        p = 0
         teamID = await self.getTeamID(team, season_start_year)
         season = str(season_start_year) + str(season_end_year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
+        player_id = None
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
@@ -186,6 +469,10 @@ class NHLBot(commands.Cog):
                             position = items2['position']['code']
                             break
 
+        if player_id == None:
+            await ctx.send("Player not found, try again.")
+            return
+
         if type == "season":
             player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=statsSingleSeason&season={season}"
         elif type == "career":
@@ -195,151 +482,47 @@ class NHLBot(commands.Cog):
         assists = 0
 
         if position == "G":
+            print("DDDDDDDDDDDDDDDDDDDDD")
             x = Goalie(name, position)
         else:
             x = Skater(name, position)
+
+        print(player_url)
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(player_url) as r:
                 res = await r.json()
                 for items in res['stats']:
                     for items2 in items['splits']:
+                        year = int(str(items2['season'])[:4])
                         if type == "career":
                             if items2['league']['name'] == "NHL" or items2['league']['name'] == "National Hockey League":
                                 if position == "G":
-                                    print(items2['stat'])
-                                    x.wins += items2['stat']['wins']
-                                    x.losses += items2['stat']['losses']
-                                    x.shots_against += items2['stat']['shotsAgainst']
-                                    x.set_minutes(items2['stat']['timeOnIce'])
-                                    x.saves += items2['stat']['saves']
-                                    x.goals_against += items2['stat']['goalsAgainst']
-                                    x.shutouts += items2['stat']['shutouts']
-                                    x.games_played += items2['stat']['games']
-                                    x.games_started += items2['stat']['gamesStarted']
+                                    x = self.set_goalie_stats(x, items2, year)
                                 else:
-                                    x.goals += items2['stat']['goals']
-                                    x.assists += items2['stat']['assists']
-                                    x.pim += items2['stat']['pim']
-                                    x.shots += items2['stat']['shots']
-                                    x.games += items2['stat']['games']
-                                    x.hits += items2['stat']['hits']
-                                    x.power_play_goals += items2['stat']['powerPlayGoals']
-                                    x.power_play_points += items2['stat']['powerPlayPoints']
-                                    x.shot_percentage += items2['stat']['shotPct']
-                                    x.game_winning_goals += items2['stat']['gameWinningGoals']
-                                    x.overtime_goals += items2['stat']['overTimeGoals']
-                                    x.shorthanded_goals += items2['stat']['shortHandedGoals']
-                                    x.shorthanded_points += items2['stat']['shortHandedPoints']
-                                    x.plus_minus += items2['stat']['plusMinus']
-                                    x.points += items2['stat']['points']
+
+                                    x = self.set_skater_stats(x, items2, year)
                         elif type == "season":
                             if position == "G":
-                                print(items2['stat'])
-                                x.wins += items2['stat']['wins']
-                                x.losses += items2['stat']['losses']
-                                x.shots_against += items2['stat']['shotsAgainst']
-                                x.set_minutes(items2['stat']['timeOnIce'])
-                                x.saves += items2['stat']['saves']
-                                x.goals_against += items2['stat']['goalsAgainst']
-                                x.shutouts += items2['stat']['shutouts']
-                                x.games_played += items2['stat']['games']
-                                x.games_started += items2['stat']['gamesStarted']
+                                x = self.set_goalie_stats(x, items2, year)
                             else:
-                                x.goals += items2['stat']['goals']
-                                x.assists += items2['stat']['assists']
-                                x.pim += items2['stat']['pim']
-                                x.shots += items2['stat']['shots']
-                                x.games += items2['stat']['games']
-                                x.hits += items2['stat']['hits']
-                                x.power_play_goals += items2['stat']['powerPlayGoals']
-                                x.power_play_points += items2['stat']['powerPlayPoints']
-                                x.shot_percentage += items2['stat']['shotPct']
-                                x.game_winning_goals += items2['stat']['gameWinningGoals']
-                                x.overtime_goals += items2['stat']['overTimeGoals']
-                                x.shorthanded_goals += items2['stat']['shortHandedGoals']
-                                x.shorthanded_points += items2['stat']['shortHandedPoints']
-                                x.plus_minus += items2['stat']['plusMinus']
-                                x.points += items2['stat']['points']
+                                x = self.set_skater_stats(x, items2, year)
+
 
         if position == "G":
-            goals_against_average = x.get_goals_against_average()
-            save_percentage = x.get_save_percentage()
-            if type == "career":
-                embed = discord.Embed(
-                    title=name,
-                    description="Career Stats\n"
-                                +"```\n"
-                                +f"Wins:            {x.wins}\n"
-                                +f"Losses:          {x.losses}\n"
-                                +f"Shutouts:        {x.shutouts}\n"
-                                +f"Games Played:    {x.games_played}\n"
-                                +f"Games Started:   {x.games_started}\n"
-                                +f"Shots Against:   {x.shots_against}\n"
-                                +f"Saves:           {x.saves}\n"
-                                +f"Goals Against:   {x.goals_against}\n"
-                                +f"Save Percentage: {round(save_percentage, 3)}\n"
-                                +f"GAA:             {round(goals_against_average, 2)}```"
-                )
-            elif type == "season":
-                embed = discord.Embed(
-                    title=name,
-                    description=f"{season_start_year}-{season_end_year} Stats\n"
-                                +"```\n"
-                                +f"Wins:            {x.wins}\n"
-                                +f"Losses:          {x.losses}\n"
-                                +f"Shutouts:        {x.shutouts}\n"
-                                +f"Games Played:    {x.games_played}\n"
-                                +f"Games Started:   {x.games_started}\n"
-                                +f"Shots Against:   {x.shots_against}\n"
-                                +f"Saves:           {x.saves}\n"
-                                +f"Goals Against:   {x.goals_against}\n"
-                                +f"Save Percentage: {round(save_percentage, 3)}\n"
-                                +f"GAA:             {round(goals_against_average, 2)}```"
-                )
-
+            embed = self.set_goalie_embed(x, season_start_year, season_end_year, type)
             await ctx.send(embed=embed)
         else:
-            if type == "career":
-                embed = discord.Embed(
-                    title=name,
-                    description=f"Career Stats\n"
-                                +"```\n"
-                                +f"Goals:              {x.goals}\n"
-                                +f"Assists:            {x.assists}\n"
-                                +f"Points:             {x.points}\n"
-                                +f"PIM:                {x.pim}\n"
-                                +f"Hits:               {x.hits}\n"
-                                +f"Shots:              {x.shots}\n"
-                                +f"Power Play Goals:   {x.power_play_goals}\n"
-                                +f"Power Play Points:  {x.power_play_points}\n"
-                                +f"Shorthanded Goals:  {x.shorthanded_goals}\n"
-                                +f"Shorthanded Points: {x.shorthanded_points}\n"
-                                +f"Overtime Goals:     {x.overtime_goals}\n"
-                                +f"Game Winning Goals: {x.game_winning_goals}\n"
-                                +f"Plus/Minus:         {x.plus_minus}```"
-                )
-            elif type == "season":
-                embed = discord.Embed(
-                    title=name,
-                    description=f"{season_start_year}-{season_end_year} Stats\n"
-                                +"```\n"
-                                +f"Goals:              {x.goals}\n"
-                                +f"Assists:            {x.assists}\n"
-                                +f"Points:             {x.points}\n"
-                                +f"PIM:                {x.pim}\n"
-                                +f"Hits:               {x.hits}\n"
-                                +f"Shots:              {x.shots}\n"
-                                +f"Shot Pct:           {x.shot_percentage}\n"
-                                +f"Power Play Goals:   {x.power_play_goals}\n"
-                                +f"Power Play Points:  {x.power_play_points}\n"
-                                +f"Shorthanded Goals:  {x.shorthanded_goals}\n"
-                                +f"Shorthanded Points: {x.shorthanded_points}\n"
-                                +f"Overtime Goals:     {x.overtime_goals}\n"
-                                + f"Game Winning Goals: {x.game_winning_goals}\n"
-                                +f"Plus/Minus:         {x.plus_minus}```"
-                )
+            embed = self.set_skater_embed(x, season_start_year, season_end_year, type)
             await ctx.send(embed=embed)
+
+    @player.error
+    async def player_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("You're missing an argument, use \"howler help nhl player\" to see required arguments")
+        else:
+            await ctx.send(f"ERROR: {error} \n If you understand what the error says, it's probably your fault. If not, it's probably Roman's fault. Contact him if so.")
+
 
 def setup(bot):
     bot.add_cog(NHLBot(bot))
