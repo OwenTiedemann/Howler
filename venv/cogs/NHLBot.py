@@ -13,6 +13,58 @@ class Player:
         self.pick = pick
         self.team = team
 
+class Skater:
+    def __init__(self, name, position):
+        self.name = name
+        self.position = position
+        self.assists = 0
+        self.goals = 0
+        self.pim = 0
+        self.shots = 0
+        self.games = 0
+        self.hits = 0
+        self.power_play_goals = 0
+        self.power_play_points = 0
+        self.faceoff_percentage = 0
+        self.shot_percentage = 0
+        self.game_winning_goals = 0
+        self.overtime_goals = 0
+        self.shorthanded_goals = 0
+        self.shorthanded_points = 0
+        self.plus_minus = 0
+        self.points = 0
+
+class Goalie:
+    def __init__(self, name, position):
+        self.name = name
+        self.position = position
+        self.minutes = 0
+        self.wins = 0
+        self.losses = 0
+        self.shutouts = 0
+        self.games_played = 0
+        self.games_started = 0
+        self.minutes_played_add = 0
+        self.minutes_played = 0
+        self.seconds_add = 0
+        self.seconds = 0
+        self.shots_against = 0
+        self.saves = 0
+        self.goals_against = 0
+
+    def set_minutes(self, time_on_ice):
+        self.minutes_played_add, self.seconds_add = time_on_ice.split(':')
+        self.minutes_played += int(self.minutes_played_add)
+        self.seconds += int(self.seconds_add)
+
+    def get_save_percentage(self):
+        return self.saves / self.shots_against
+
+    def get_goals_against_average(self):
+        self.minutes_played += self.seconds/60
+        return (self.goals_against * 60) / self.minutes_played
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -130,7 +182,6 @@ class NHLBot(commands.Cog):
                 for items in res['teams']:
                     for items2 in items['roster']['roster']:
                         if name == items2['person']['fullName']:
-                            print(items2['position'])
                             player_id = items2['person']['id']
                             position = items2['position']['code']
                             break
@@ -142,10 +193,11 @@ class NHLBot(commands.Cog):
 
         goals = 0
         assists = 0
-        wins = 0
-        losses = 0
-        save_percentage = []
-        goals_against_average = []
+
+        if position == "G":
+            x = Goalie(name, position)
+        else:
+            x = Skater(name, position)
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(player_url) as r:
@@ -156,35 +208,138 @@ class NHLBot(commands.Cog):
                             if items2['league']['name'] == "NHL" or items2['league']['name'] == "National Hockey League":
                                 if position == "G":
                                     print(items2['stat'])
-                                    wins += items2['stat']['wins']
-                                    losses += items2['stat']['losses']
-                                    save_percentage.append(items2['stat']['savePercentage'])
-                                    goals_against_average.append(items2['stat']['goalAgainstAverage'])
+                                    x.wins += items2['stat']['wins']
+                                    x.losses += items2['stat']['losses']
+                                    x.shots_against += items2['stat']['shotsAgainst']
+                                    x.set_minutes(items2['stat']['timeOnIce'])
+                                    x.saves += items2['stat']['saves']
+                                    x.goals_against += items2['stat']['goalsAgainst']
+                                    x.shutouts += items2['stat']['shutouts']
+                                    x.games_played += items2['stat']['games']
+                                    x.games_started += items2['stat']['gamesStarted']
                                 else:
-                                    goals += items2['stat']['goals']
-                                    assists += items2['stat']['assists']
-                        else:
+                                    x.goals += items2['stat']['goals']
+                                    x.assists += items2['stat']['assists']
+                                    x.pim += items2['stat']['pim']
+                                    x.shots += items2['stat']['shots']
+                                    x.games += items2['stat']['games']
+                                    x.hits += items2['stat']['hits']
+                                    x.power_play_goals += items2['stat']['powerPlayGoals']
+                                    x.power_play_points += items2['stat']['powerPlayPoints']
+                                    x.shot_percentage += items2['stat']['shotPct']
+                                    x.game_winning_goals += items2['stat']['gameWinningGoals']
+                                    x.overtime_goals += items2['stat']['overTimeGoals']
+                                    x.shorthanded_goals += items2['stat']['shortHandedGoals']
+                                    x.shorthanded_points += items2['stat']['shortHandedPoints']
+                                    x.plus_minus += items2['stat']['plusMinus']
+                                    x.points += items2['stat']['points']
+                        elif type == "season":
                             if position == "G":
                                 print(items2['stat'])
-                                wins += items2['stat']['wins']
-                                losses += items2['stat']['losses']
-                                save_percentage.append(items2['stat']['savePercentage'])
-                                goals_against_average.append(items2['stat']['goalAgainstAverage'])
+                                x.wins += items2['stat']['wins']
+                                x.losses += items2['stat']['losses']
+                                x.shots_against += items2['stat']['shotsAgainst']
+                                x.set_minutes(items2['stat']['timeOnIce'])
+                                x.saves += items2['stat']['saves']
+                                x.goals_against += items2['stat']['goalsAgainst']
+                                x.shutouts += items2['stat']['shutouts']
+                                x.games_played += items2['stat']['games']
+                                x.games_started += items2['stat']['gamesStarted']
                             else:
-                                goals += items2['stat']['goals']
-                                assists += items2['stat']['assists']
-
+                                x.goals += items2['stat']['goals']
+                                x.assists += items2['stat']['assists']
+                                x.pim += items2['stat']['pim']
+                                x.shots += items2['stat']['shots']
+                                x.games += items2['stat']['games']
+                                x.hits += items2['stat']['hits']
+                                x.power_play_goals += items2['stat']['powerPlayGoals']
+                                x.power_play_points += items2['stat']['powerPlayPoints']
+                                x.shot_percentage += items2['stat']['shotPct']
+                                x.game_winning_goals += items2['stat']['gameWinningGoals']
+                                x.overtime_goals += items2['stat']['overTimeGoals']
+                                x.shorthanded_goals += items2['stat']['shortHandedGoals']
+                                x.shorthanded_points += items2['stat']['shortHandedPoints']
+                                x.plus_minus += items2['stat']['plusMinus']
+                                x.points += items2['stat']['points']
 
         if position == "G":
-            average_svp = sum(save_percentage) / len(save_percentage)
-            average_gaa = sum(goals_against_average) / len(goals_against_average)
-            await ctx.send(f"wins: {wins} losses: {losses} save percentage: {round(average_svp, 3)} GAA: {round(average_gaa, 2)} Note: SVP and GAA slighly off from actual values due to API issues")
+            goals_against_average = x.get_goals_against_average()
+            save_percentage = x.get_save_percentage()
+            if type == "career":
+                embed = discord.Embed(
+                    title=name,
+                    description="Career Stats\n"
+                                +"```\n"
+                                +f"Wins:            {x.wins}\n"
+                                +f"Losses:          {x.losses}\n"
+                                +f"Shutouts:        {x.shutouts}\n"
+                                +f"Games Played:    {x.games_played}\n"
+                                +f"Games Started:   {x.games_started}\n"
+                                +f"Shots Against:   {x.shots_against}\n"
+                                +f"Saves:           {x.saves}\n"
+                                +f"Goals Against:   {x.goals_against}\n"
+                                +f"Save Percentage: {round(save_percentage, 3)}\n"
+                                +f"GAA:             {round(goals_against_average, 2)}```"
+                )
+            elif type == "season":
+                embed = discord.Embed(
+                    title=name,
+                    description=f"{season_start_year}-{season_end_year} Stats\n"
+                                +"```\n"
+                                +f"Wins:            {x.wins}\n"
+                                +f"Losses:          {x.losses}\n"
+                                +f"Shutouts:        {x.shutouts}\n"
+                                +f"Games Played:    {x.games_played}\n"
+                                +f"Games Started:   {x.games_started}\n"
+                                +f"Shots Against:   {x.shots_against}\n"
+                                +f"Saves:           {x.saves}\n"
+                                +f"Goals Against:   {x.goals_against}\n"
+                                +f"Save Percentage: {round(save_percentage, 3)}\n"
+                                +f"GAA:             {round(goals_against_average, 2)}```"
+                )
+
+            await ctx.send(embed=embed)
         else:
-            points = goals + assists
-            await ctx.send(f"goals: {goals} assists: {assists} points: {points}")
-
-
-
+            if type == "career":
+                embed = discord.Embed(
+                    title=name,
+                    description=f"Career Stats\n"
+                                +"```\n"
+                                +f"Goals:              {x.goals}\n"
+                                +f"Assists:            {x.assists}\n"
+                                +f"Points:             {x.points}\n"
+                                +f"PIM:                {x.pim}\n"
+                                +f"Hits:               {x.hits}\n"
+                                +f"Shots:              {x.shots}\n"
+                                +f"Power Play Goals:   {x.power_play_goals}\n"
+                                +f"Power Play Points:  {x.power_play_points}\n"
+                                +f"Shorthanded Goals:  {x.shorthanded_goals}\n"
+                                +f"Shorthanded Points: {x.shorthanded_points}\n"
+                                +f"Overtime Goals:     {x.overtime_goals}\n"
+                                +f"Game Winning Goals: {x.game_winning_goals}\n"
+                                +f"Plus/Minus:         {x.plus_minus}```"
+                )
+            elif type == "season":
+                embed = discord.Embed(
+                    title=name,
+                    description=f"{season_start_year}-{season_end_year} Stats\n"
+                                +"```\n"
+                                +f"Goals:              {x.goals}\n"
+                                +f"Assists:            {x.assists}\n"
+                                +f"Points:             {x.points}\n"
+                                +f"PIM:                {x.pim}\n"
+                                +f"Hits:               {x.hits}\n"
+                                +f"Shots:              {x.shots}\n"
+                                +f"Shot Pct:           {x.shot_percentage}\n"
+                                +f"Power Play Goals:   {x.power_play_goals}\n"
+                                +f"Power Play Points:  {x.power_play_points}\n"
+                                +f"Shorthanded Goals:  {x.shorthanded_goals}\n"
+                                +f"Shorthanded Points: {x.shorthanded_points}\n"
+                                +f"Overtime Goals:     {x.overtime_goals}\n"
+                                + f"Game Winning Goals: {x.game_winning_goals}\n"
+                                +f"Plus/Minus:         {x.plus_minus}```"
+                )
+            await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(NHLBot(bot))
