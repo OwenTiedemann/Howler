@@ -1,9 +1,9 @@
-import config
 import discord
 from discord.ext import commands, tasks
 import tweepy
 import motor.motor_asyncio
 import json
+import config
 
 channel_list = []
 name_list = []

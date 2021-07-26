@@ -1,7 +1,7 @@
-import config
 import discord
 from discord.ext import commands, tasks
 import motor.motor_asyncio
+import config
 
 intents = discord.Intents.default()
 
