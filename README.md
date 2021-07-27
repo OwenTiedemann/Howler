@@ -29,7 +29,9 @@ howler nhl draft <year> <round> <team>
 you have to enter 0 as the round or it won't work. You don't have to enter a team if you want to see all picks in a certain round
 
 	howler nhl draft 2020 0 ARI
+	
 	howler nhl draft 2020 1 "Arizona Coyotes"
+	
 	howler nhl draft 2020 6
 
 howler nhl player <name> <team> <season_start_year> <season_end_year> <type>
@@ -38,6 +40,7 @@ howler nhl player <name> <team> <season_start_year> <season_end_year> <type>
 team should be if you use their whole name, but you can use their abbreviation without them
 
 	howler nhl player "Christian Dvorak" ARI 2020 2021 career
+	
 	howler nhl player "Jaromir Jagr" "Pittsburgh Penguins" 1995 1996 season
 
 howler nhl team next <team>
