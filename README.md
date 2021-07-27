@@ -5,13 +5,13 @@ Howler command tutorial
 
 Twitter
 
-howler twitter add <channel> <handle>
+howler twitter add \<channel\> \<handle\>
 
 -adds a twitter feed to the selected channel, handle must be exact to the twitter accounts handle or it won't work
 
 	howler twitter add #craig-morgan CraigSMorgan
 
-howler twitter remove <handle>
+howler twitter remove \<handle\>
 
 -removes a twitter feed from the server, handle must be exact or it won't work
 
@@ -23,7 +23,7 @@ howler twitter list
 
 NHL
 
-howler nhl draft <year> <round> <team>
+howler nhl draft \<year\> \<round\> \<team\>
 
 -shows a list of all draft picks in the criteria you selected. If you want to show a teams draft for that year with all picks, 
 you have to enter 0 as the round or it won't work. You don't have to enter a team if you want to see all picks in a certain round
@@ -41,19 +41,19 @@ team should be if you use their whole name, but you can use their abbreviation w
 	
 	howler nhl player "Jaromir Jagr" "Pittsburgh Penguins" 1995 1996 season
 
-howler nhl team next <team>
+howler nhl team next \<team\>
 
 -shows teams next game, team must be in quotation if you use their whole but doesn't need them if you use their abbreviation
 
 	howler nhl team next "Arizona Coyotes"
 
-howler nhl team last <team>
+howler nhl team last \<team\>
 
 -same as next but shows the previous game
 
 	howler nhl team last "Arizona Coyotes"
 
-howler nhl team roster <team>
+howler nhl team roster \<team\>
 
 -shows the roster of the team you input
 
