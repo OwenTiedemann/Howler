@@ -1,8 +1,14 @@
 import discord
 from discord.ext import commands
 import aiohttp
+import datetime
 import json
-import config
+
+class Period:
+    def __init__(self, period, home, away):
+        self.period = period
+        self.home = home
+        self.away = away
 
 class Player:
     def __init__(self, firstName, lastName, position, round, pick, team):
@@ -522,6 +528,84 @@ class NHLBot(commands.Cog):
             await ctx.send("You're missing an argument, use \"howler help nhl player\" to see required arguments")
         else:
             await ctx.send(f"ERROR: {error} \n If you understand what the error says, it's probably your fault. If not, it's probably Roman's fault. Contact him if so.")
+
+    @nhl.group()
+    async def team(self, ctx):
+        pass
+
+    @team.command()
+    async def next(self, ctx, team):
+        teamID = await self.getTeamID(team, datetime.datetime.now().year)
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.next"
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(team_url) as r:
+                res = await r.json()
+                print(res)
+                for matchup in res['teams']:
+                    for schedule in matchup['nextGameSchedule']['dates']:
+                        for game in schedule['games']:
+                            game_date = datetime.datetime.strptime(game['gameDate'],'%Y-%m-%dT%H:%M:%S%f%z')
+                            game_status = game['status']
+                            away_team = game['teams']['away']
+                            home_team = game['teams']['home']
+
+        embed = discord.Embed(
+            title=f"{away_team['team']['name']} AT {home_team['team']['name']}",
+            description=f"```Date: {game_date} \nStatus: {game_status['detailedState']}```"
+        )
+        embed.add_field(name=f"{home_team['team']['name']}",
+                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-{home_team['leagueRecord']['ot']}```")
+        embed.add_field(name=f"{away_team['team']['name']}",
+                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-{away_team['leagueRecord']['ot']}```")
+
+        await ctx.send(embed=embed)
+
+    @team.command()
+    async def last(self, ctx, team):
+        period_list = []
+
+        teamID = await self.getTeamID(team, datetime.datetime.now().year)
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.previous"
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(team_url) as r:
+                res = await r.json()
+                for matchup in res['teams']:
+                    for schedule in matchup['previousGameSchedule']['dates']:
+                        for game in schedule['games']:
+                            game_date = datetime.datetime.strptime(game['gameDate'], '%Y-%m-%dT%H:%M:%S%f%z')
+                            game_status = game['status']
+                            game_id = game['gamePk']
+                            away_team = game['teams']['away']
+                            home_team = game['teams']['home']
+
+        game_url = f"https://statsapi.web.nhl.com/api/v1/game/{game_id}/linescore"
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(game_url) as r:
+                res = await r.json()
+                print(res)
+                for period in res['periods']:
+                    x = Period(period['ordinalNum'], period['home'], period['away'])
+                    period_list.append(x)
+
+        embed = discord.Embed(
+            title=f"{away_team['team']['name']} AT {home_team['team']['name']}",
+            description=f"```Date: {game_date} \nStatus: {game_status['detailedState']} \nScore: {away_team['score']}-{home_team['score']}```"
+        )
+
+        away_periods = ""
+        home_periods = ""
+
+        for period in period_list:
+            away_periods += f"{period.period} period:\n Shots: {period.away['shotsOnGoal']}\n Goals: {period.away['goals']}\n"
+            home_periods += f"{period.period} period:\n Shots: {period.home['shotsOnGoal']}\n Goals: {period.home['goals']}\n"
+
+        embed.add_field(name=f"{away_team['team']['name']}",
+                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-{away_team['leagueRecord']['ot']}\n{away_periods}```")
+        embed.add_field(name=f"{home_team['team']['name']}",
+                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-{home_team['leagueRecord']['ot']}\n{home_periods}```")
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
