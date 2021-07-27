@@ -112,18 +112,19 @@ class TweetBot(commands.Cog):
 
     @twitter.command(name="add", brief="Add a twitter feed")
     @commands.cooldown(1, 30, commands.BucketType.user)
-    #@commands.has_role('Discord Admin')
-    async def _add(self, ctx, channel: discord.TextChannel, name: str):
+    @commands.has_role('Discord Admin')
+    async def _add(self, ctx, channel: discord.TextChannel, handle: str):
         feeds_collection = self.bot.database['Twitter Feeds']
 
         try:
-            user = api.get_user(name) #gets user id of inputted handle
+            user = api.get_user(handle) #gets user id of inputted handle
             user_id = user.id
-        except:
+        except Exception as inst:
+            print(inst)
             await ctx.send("Could not find that twitter user, please try again.")
             return
 
-        feed_dict = {"_id": str(user_id), "channel": channel.id, "name": name}
+        feed_dict = {"_id": str(user_id), "channel": channel.id, "name": handle}
 
         try:
             await feeds_collection.insert_one(feed_dict) #inserts the feed into the database
@@ -133,8 +134,10 @@ class TweetBot(commands.Cog):
 
         channel_list.append(channel.id) #adds feed to lists for stream
         id_list.append(str(user.id))
-        name_list.append(name)
+        name_list.append(handle)
         self.fill_list()
+
+        await ctx.send(f"Now following {handle}")
 
     @_add.error
     async def _remove_error(self, ctx, error):
@@ -147,12 +150,12 @@ class TweetBot(commands.Cog):
 
     @twitter.command(name="remove", brief="Remove a Twitter feed")
     @commands.cooldown(1, 30, commands.BucketType.user)
-    #@commands.has_role('Discord Admin')
-    async def _remove(self, ctx, name: str):
+    @commands.has_role('Discord Admin')
+    async def _remove(self, ctx, handle: str):
         feeds_collection = self.bot.database['Twitter Feeds']
         feeds = await feeds_collection.find().to_list(length=None) #converts collection cursor to list
         for feed in feeds:
-            if feed['name'] == name:
+            if feed['name'] == handle:
                 await feeds_collection.delete_many(feed) #deletes the database section for that feed
                 await ctx.send('Unfollowed that feed!')
                 user_list.clear() #resets the lists in prep for stream restart

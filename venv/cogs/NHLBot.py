@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import aiohttp
 import json
-
+import config
 
 class Player:
     def __init__(self, firstName, lastName, position, round, pick, team):
@@ -287,12 +287,12 @@ class NHLBot(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    #@draft.error
-    #async def draft_error(self, ctx, error):
-    #    if isinstance(error, commands.MissingRequiredArgument):
-    #        await ctx.send("You're missing an argument, use \"howler help nhl draft\" to see required arguments")
-    #    else:
-    #        await ctx.send(f"ERROR: {error}, you can blame Roman for this, but he doesn't know what happened either. Let him know though.")
+    @draft.error
+    async def draft_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("You're missing an argument, use \"howler help nhl draft\" to see required arguments")
+        else:
+            await ctx.send(f"ERROR: {error} \n If you understand what the error says, it's probably your fault. If not, it's probably Roman's fault. Contact him if so.")
 
     def set_goalie_stats(self, x, stats, year):
         if year > 1954:
