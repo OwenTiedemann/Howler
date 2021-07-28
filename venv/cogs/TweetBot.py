@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands, tasks
 import tweepy
@@ -111,7 +113,7 @@ class TweetBot(commands.Cog):
             await ctx.send("Group of commands related to Twitter, for more info use howler help twitter")
 
     @twitter.command(name="add", brief="Add a twitter feed")
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.has_role('Discord Admin')
     async def _add(self, ctx, channel: discord.TextChannel, handle: str):
         feeds_collection = self.bot.database['Twitter Feeds']
@@ -139,17 +141,9 @@ class TweetBot(commands.Cog):
 
         await ctx.send(f"Now following {handle}")
 
-    @_add.error
-    async def _remove_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            await ctx.send("You do not have permission to use this command!")
-        elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"This command is on cooldown, try again later. {str(round(error.retry_after, 1))} seconds left!")
-        else:
-            await ctx.send(error)
 
     @twitter.command(name="remove", brief="Remove a Twitter feed")
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.has_role('Discord Admin')
     async def _remove(self, ctx, handle: str):
         feeds_collection = self.bot.database['Twitter Feeds']
@@ -164,14 +158,6 @@ class TweetBot(commands.Cog):
                 self.get_twitter_users.start() #restarts stream
                 return
 
-    @_remove.error
-    async def _remove_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            await ctx.send("You do not have permission to use this command!")
-        elif isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"This command is on cooldown, try again later. {str(round(error.retry_after, 0))} seconds left!")
-        else:
-            await ctx.send(error)
 
     @twitter.command(name="list", brief="Show list of all Twitter feeds")
     async def _list(self, ctx):
