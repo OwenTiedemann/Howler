@@ -8,6 +8,8 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix=['howler ', 'Howler '], intents=intents)
 database_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongo_db_token)
 bot.database = database_client['ArizonaCoyotesDiscord']
+player_database = database_client['Players']
+bot.player_collection = player_database['Players']
 bot.trivia_database = database_client['database']
 
 initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot']

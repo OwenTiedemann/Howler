@@ -218,173 +218,176 @@ def set_skater_embed(x, year_start, year_end, type):
     return embed
 
 
+async def get_nhl_draft_url(year, round, teamID):
+
+    if teamID is None and round == 0:
+        return 0
+    elif round == 0:
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}'
+    elif teamID is None:
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftYear={year}%20and%20roundNumber={round}'
+    else:
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}%20and%20roundNumber={round}'
+
+
+async def getTeamID(team: str, year: int):
+
+    if team is None: #returns None if team is none
+        return None
+
+    #async with aiohttp.ClientSession() as cs:
+        #async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
+            #res = await r.json()
+            #for items in res['teams']:
+                #if items['name'] == team or items['abbreviation'] == team:
+                    #print(items['id'])
+                    #return int(items['id'])
+
+    # if statement tree for team ids, would use the above code, but it doesn't work for defunct teams or different names
+
+    if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" or team == "Kansas City Scouts" or team == "KCS":
+        if year < 1976:
+            return 48
+        elif year < 1982:
+            return 35
+        else:
+            return 1
+    elif team == "New York Islanders" or team == "NYI":
+        return 2
+    elif team == "New York Rangers" or team == "NYR":
+        return 3
+    elif team == "Philadelphia Flyers" or team == "PHI":
+        return 4
+    elif team == "Pittsburgh Penguins" or team == "PIT":
+        return 5
+    elif team == "Boston Bruins" or team == "BOS":
+        return 6
+    elif team == "Buffalo Sabres" or team == "BUF":
+        return 7
+    elif team == "Montreal Canadiens" or team == "MTL":
+        return 8
+    elif team == "Ottawa Senators" or team == "OTT" or team == "St Louis Eagles" or team == "SLE":
+        if year < 1934:
+            return 36
+        elif year < 1935:
+            return 45
+        else:
+            return 9
+    elif team == "Toronto Maple Leafs" or team == "TOR":
+        return 10
+
+    elif team == "Atlanta Thrashers" or team == "ATL" or team == "Winnipeg Jets" or team == "WIN":
+        if year < 2011:
+            return 11
+        else:
+            return 52
+
+    elif team == "Carolina Hurricanes" or team == "CAR" or team == "Hartford Whalers" or team == "HFD":
+        if year < 1997:
+            return 34
+        else:
+            return 12
+    elif team == "Florida Panthers" or team == "FLA":
+        return 13
+    elif team == "Tampa Bay Lightning" or team == "TBL":
+        return 14
+    elif team == "Washington Capitols" or team == "WSH":
+        return 15
+    elif team == "Chicago Blackhawks" or team == "CHI":
+        return 16
+    elif team == "Detroit Red Wings" or team == "DET" or team == "Detroit Cougars" or team == "DCG" or team == "Detroit Falcons" or team == "DFL":
+        if year < 1930:
+            return 40
+        elif year < 1932:
+            return 50
+        else:
+            return 17
+    elif team == "Nashville Predators" or team == "NSH":
+        return 18
+    elif team == "St Louis Blues" or team == "STL":
+        return 19
+    elif team == "Calgary Flames" or team == "CGY" or team == "Atlanta Flames" or team == "AFM":
+        if year < 1980:
+            return 47
+        else:
+            return 20
+    elif team == "Colorado Avalanche" or team == "COL" or team == "Quebec Nordiques" or team == "QUE":
+        if year < 1995:
+            return 32
+        else:
+            return 21
+    elif team == "Edmonton Oilers" or team == "EDM":
+        return 22
+    elif team == "Vancouver Canucks" or team == "VAN":
+        return 23
+    elif team == "Anaheim Ducks" or team == "ANA":
+        return 24
+    elif team == "Dallas Stars" or team == "DAL" or team == "Minnesota North Stars" or team == "MNS":
+        if year < 1993:
+            return 31
+        else:
+            return 25
+    elif team == "Los Angeles Kings" or team == "LAK":
+        return 26
+    elif team == "Arizona Coyotes" or team == "ARI" or team == "PHX":
+        if 2014 > year > 1995:
+            return 27
+        elif year < 1996:
+            return 33
+        else:
+            return 53
+    elif team == "San Jose Sharks" or team == "SJS":
+        return 28
+    elif team == "Columbus Blue Jackets" or team == "CBJ":
+        return 29
+    elif team == "Minnesota Wild" or team == "MIN":
+        return 30
+    elif team == "Hamilton Tigers" or team == "HAM" or team == "Quebec Bulldogs" or team == "QBD":
+        if year < 1920:
+            return 42
+        return 37
+    elif team == "Pittsburgh Pirates" or team == "PIR" or team == "Philedelphia Quakers" or team == "QUA":
+        if year < 1930:
+            return 39
+        else:
+            return 38
+    elif team == "Montreal Wanderers" or team == "MWN":
+        return 41
+    elif team == "Montreal Maroons" or team == "MMN":
+        return 43
+    elif team == "New York Americans" or team == "NYA" or team == "Brooklyn Americans" or team == "BRK":
+        if year < 1941:
+            return 44
+        else:
+            return 51
+    elif team == "Oakland Seals" or team == "OAK" or team == "Cleveland Barons" or team == "CLE":
+        if year < 1970:
+            return 46
+        else:
+            return 49
+    elif team == "Vegas Golden Knights" or team == "VGK":
+        return 54
+    elif team == "Seattle Kraken" or team == "SEA":
+        return 55
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.player_collection = bot.player_collection
 
     @commands.group(invoke_without_command=True)
     async def nhl(self, ctx):
         pass
-
-    async def getTeamID(self, team: str, year: int):
-
-        if team is None: #returns None if team is none
-            return None
-
-        #async with aiohttp.ClientSession() as cs:
-            #async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
-                #res = await r.json()
-                #for items in res['teams']:
-                    #if items['name'] == team or items['abbreviation'] == team:
-                        #print(items['id'])
-                        #return int(items['id'])
-
-        # if statement tree for team ids, would use the above code, but it doesn't work for defunct teams or different names
-
-        if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" or team == "Kansas City Scouts" or team == "KCS":
-            if year < 1976:
-                return 48
-            elif year < 1982:
-                return 35
-            else:
-                return 1
-        elif team == "New York Islanders" or team == "NYI":
-            return 2
-        elif team == "New York Rangers" or team == "NYR":
-            return 3
-        elif team == "Philadelphia Flyers" or team == "PHI":
-            return 4
-        elif team == "Pittsburgh Penguins" or team == "PIT":
-            return 5
-        elif team == "Boston Bruins" or team == "BOS":
-            return 6
-        elif team == "Buffalo Sabres" or team == "BUF":
-            return 7
-        elif team == "Montreal Canadiens" or team == "MTL":
-            return 8
-        elif team == "Ottawa Senators" or team == "OTT" or team == "St Louis Eagles" or team == "SLE":
-            if year < 1934:
-                return 36
-            elif year < 1935:
-                return 45
-            else:
-                return 9
-        elif team == "Toronto Maple Leafs" or team == "TOR":
-            return 10
-
-        elif team == "Atlanta Thrashers" or team == "ATL" or team == "Winnipeg Jets" or team == "WIN":
-            if year < 2011:
-                return 11
-            else:
-                return 52
-
-        elif team == "Carolina Hurricanes" or team == "CAR" or team == "Hartford Whalers" or team == "HFD":
-            if year < 1997:
-                return 34
-            else:
-                return 12
-        elif team == "Florida Panthers" or team == "FLA":
-            return 13
-        elif team == "Tampa Bay Lightning" or team == "TBL":
-            return 14
-        elif team == "Washington Capitols" or team == "WSH":
-            return 15
-        elif team == "Chicago Blackhawks" or team == "CHI":
-            return 16
-        elif team == "Detroit Red Wings" or team == "DET" or team == "Detroit Cougars" or team == "DCG" or team == "Detroit Falcons" or team == "DFL":
-            if year < 1930:
-                return 40
-            elif year < 1932:
-                return 50
-            else:
-                return 17
-        elif team == "Nashville Predators" or team == "NSH":
-            return 18
-        elif team == "St Louis Blues" or team == "STL":
-            return 19
-        elif team == "Calgary Flames" or team == "CGY" or team == "Atlanta Flames" or team == "AFM":
-            if year < 1980:
-                return 47
-            else:
-                return 20
-        elif team == "Colorado Avalanche" or team == "COL" or team == "Quebec Nordiques" or team == "QUE":
-            if year < 1995:
-                return 32
-            else:
-                return 21
-        elif team == "Edmonton Oilers" or team == "EDM":
-            return 22
-        elif team == "Vancouver Canucks" or team == "VAN":
-            return 23
-        elif team == "Anaheim Ducks" or team == "ANA":
-            return 24
-        elif team == "Dallas Stars" or team == "DAL" or team == "Minnesota North Stars" or team == "MNS":
-            if year < 1993:
-                return 31
-            else:
-                return 25
-        elif team == "Los Angeles Kings" or team == "LAK":
-            return 26
-        elif team == "Arizona Coyotes" or team == "ARI" or team == "PHX":
-            if 2014 > year > 1995:
-                return 27
-            elif year < 1996:
-                return 33
-            else:
-                return 53
-        elif team == "San Jose Sharks" or team == "SJS":
-            return 28
-        elif team == "Columbus Blue Jackets" or team == "CBJ":
-            return 29
-        elif team == "Minnesota Wild" or team == "MIN":
-            return 30
-        elif team == "Hamilton Tigers" or team == "HAM" or team == "Quebec Bulldogs" or team == "QBD":
-            if year < 1920:
-                return 42
-            return 37
-        elif team == "Pittsburgh Pirates" or team == "PIR" or team == "Philedelphia Quakers" or team == "QUA":
-            if year < 1930:
-                return 39
-            else:
-                return 38
-        elif team == "Montreal Wanderers" or team == "MWN":
-            return 41
-        elif team == "Montreal Maroons" or team == "MMN":
-            return 43
-        elif team == "New York Americans" or team == "NYA" or team == "Brooklyn Americans" or team == "BRK":
-            if year < 1941:
-                return 44
-            else:
-                return 51
-        elif team == "Oakland Seals" or team == "OAK" or team == "Cleveland Barons" or team == "CLE":
-            if year < 1970:
-                return 46
-            else:
-                return 49
-        elif team == "Vegas Golden Knights" or team == "VGK":
-            return 54
-        elif team == "Seattle Kraken" or team == "SEA":
-            return 55
-
-    async def get_nhl_draft_url(self, year, round, teamID):
-
-        if teamID is None and round == 0:
-            return 0
-        elif round == 0:
-            return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}'
-        elif teamID is None:
-            return f'https://records.nhl.com/site/api/draft?cayenneExp=draftYear={year}%20and%20roundNumber={round}'
-        else:
-            return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}%20and%20roundNumber={round}'
 
     @nhl.command()
     async def draft(self, ctx, year: int, round=0, team=None):
 
         player_list = []
 
-        teamID = await self.getTeamID(team, year)
+        teamID = await getTeamID(team, year)
 
-        url = await self.get_nhl_draft_url(year, round, teamID)
+        url = await get_nhl_draft_url(year, round, teamID)
         if url == 0:
             await ctx.send("Invalid Arguments, input a team with round as 0 for all rounds, or input a round")
             return
@@ -469,24 +472,37 @@ class NHLBot(commands.Cog):
         if type not in type_list:
             await ctx.send("Type must be either \"career\" or \"season\"")
 
-        teamID = await self.getTeamID(team, season_start_year)
-        season = str(season_start_year) + str(season_end_year)
+        player = await self.bot.player_collection.find_one({'fullName': name})
 
-        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
-        player_id = None
-        async with aiohttp.ClientSession() as cs:
-            async with cs.get(team_url) as r:
-                res = await r.json()
-                for items in res['teams']:
-                    for items2 in items['roster']['roster']:
-                        if name == items2['person']['fullName']:
-                            player_id = items2['person']['id']
-                            position = items2['position']['code']
-                            break
+        if player is None:
+            teamID = await getTeamID(team, season_start_year)
+            season = str(season_start_year) + str(season_end_year)
 
-        if player_id is None:
-            await ctx.send("Player not found, try again.")
-            return
+            team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
+            player_id = None
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(team_url) as r:
+                    res = await r.json()
+                    for items in res['teams']:
+                        for items2 in items['roster']['roster']:
+                            if name == items2['person']['fullName']:
+                                player_id = items2['person']['id']
+                                player_name = items2['person']['fullName']
+                                position = items2['position']['code']
+                                break
+
+            if player_id is None:
+                await ctx.send("Player not found, try again.")
+                return
+            else:
+                if await self.bot.player_collection.count_documents({"_id": player_id}, limit=1) != 0:
+                    pass
+                else:
+                    player_dict = {"_id": player_id, 'fullName': player_name, 'position': position}
+                    await self.bot.player_collection.insert_one(player_dict)
+        else:
+            player_id = player['_id']
+            position = player['position']
 
         player_url = ""
 
@@ -532,7 +548,7 @@ class NHLBot(commands.Cog):
 
     @team.command()
     async def next(self, ctx, team):
-        teamID = await self.getTeamID(team, datetime.datetime.now().year)
+        teamID = await getTeamID(team, datetime.datetime.now().year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.next"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
@@ -568,7 +584,7 @@ class NHLBot(commands.Cog):
     async def last(self, ctx, team):
         period_list = []
 
-        teamID = await self.getTeamID(team, datetime.datetime.now().year)
+        teamID = await getTeamID(team, datetime.datetime.now().year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.previous"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
@@ -623,7 +639,7 @@ class NHLBot(commands.Cog):
         forward_list=[]
         defenseman_list=[]
         goalie_list=[]
-        teamID = await self.getTeamID(team, int(season_start_year))
+        teamID = await getTeamID(team, int(season_start_year))
         season = str(season_start_year) + str(season_end_year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
         async with aiohttp.ClientSession() as cs:
