@@ -71,21 +71,21 @@ class Goalie:
         self.saves = 0
         self.goals_against = 0
 
-    def set_minutes(self, time_on_ice):
+    def set_minutes(self, time_on_ice):  # adds minutes to class variable
         self.minutes_played_add, self.seconds_add = time_on_ice.split(':')
         self.minutes_played += int(self.minutes_played_add)
         self.seconds += int(self.seconds_add)
 
-    def get_save_percentage(self):
+    def get_save_percentage(self):  # retrieves save percentage by dividing saves by shots against
         return self.saves / self.shots_against
 
-    def get_goals_against_average(self):
+    def get_goals_against_average(self):  # retrieves GAA by dividing goals against by minutes played
         self.minutes_played += self.seconds / 60
         return (self.goals_against * 60) / self.minutes_played
 
 
 def set_goalie_stats(x, stats, year):
-    if year > 1954:
+    if year > 1954:  # only adds these stats if the year is after 1954
         x.shots_against += stats['stat']['shotsAgainst']
         x.saves += stats['stat']['saves']
 
@@ -103,37 +103,35 @@ def set_goalie_stats(x, stats, year):
 def set_goalie_embed(x, year_start, year_end, fetch_type):
     goals_against_average = x.get_goals_against_average()
 
-    if year_start > 1954:
-        save_percentage = x.get_save_percentage()
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:    {x.games_played}\n"
-                        + f"Wins:            {x.wins}\n"
-                        + f"Losses:          {x.losses}\n"
-                        + f"Shutouts:        {x.shutouts}\n"
-                        + f"Games Played:    {x.games_played}\n"
-                        + f"Games Started:   {x.games_started}\n"
-                        + f"Shots Against:   {x.shots_against}\n"
-                        + f"Saves:           {x.saves}\n"
-                        + f"Goals Against:   {x.goals_against}\n"
-                        + f"Save Percentage: {round(save_percentage, 3)}\n"
-                        + f"GAA:             {round(goals_against_average, 2)}```"
-        )
-    else:
+    embed = discord.Embed(
+        title=x.name
+    )
 
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:    {x.games_played}\n"
-                        + f"Wins:            {x.wins}\n"
-                        + f"Losses:          {x.losses}\n"
-                        + f"Shutouts:        {x.shutouts}\n"
-                        + f"Games Played:    {x.games_played}\n"
-                        + f"Games Started:   {x.games_started}\n"
-                        + f"Goals Against:   {x.goals_against}\n"
-                        + f"GAA:             {round(goals_against_average, 2)}```"
-        )
+    if year_start > 1954:  # sets this
+        save_percentage = x.get_save_percentage()
+        embed.description = "```\n" \
+                            f"Games Played:    {x.games_played}\n" \
+                            f"Wins:            {x.wins}\n" \
+                            f"Losses:          {x.losses}\n" \
+                            f"Shutouts:        {x.shutouts}\n" \
+                            f"Games Played:    {x.games_played}\n" \
+                            f"Games Started:   {x.games_started}\n" \
+                            f"Shots Against:   {x.shots_against}\n" \
+                            f"Saves:           {x.saves}\n" \
+                            f"Goals Against:   {x.goals_against}\n" \
+                            f"Save Percentage: {round(save_percentage, 3)}\n" \
+                            f"GAA:             {round(goals_against_average, 2)}```"
+
+    else:
+        embed.description = "```\n" \
+                            f"Games Played:    {x.games_played}\n" \
+                            f"Wins:            {x.wins}\n" \
+                            f"Losses:          {x.losses}\n" \
+                            f"Shutouts:        {x.shutouts}\n" \
+                            f"Games Played:    {x.games_played}\n" \
+                            f"Games Started:   {x.games_started}\n" \
+                            f"Goals Against:   {x.goals_against}\n" \
+                            f"GAA:             {round(goals_against_average, 2)}```"
 
     if fetch_type == "career":
         embed.description = "Career Stats\n" + embed.description
@@ -144,73 +142,69 @@ def set_goalie_embed(x, year_start, year_end, fetch_type):
 
 
 def set_skater_embed(x, year_start, year_end, fetch_type):
+    embed = discord.Embed(
+        title=x.name
+    )
+
     if year_start > 1996:
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:       {x.games}\n"
-                        + f"Goals:              {x.goals}\n"
-                        + f"Assists:            {x.assists}\n"
-                        + f"Points:             {x.points}\n"
-                        + f"PIM:                {x.pim}\n"
-                        + f"Hits:               {x.hits}\n"
-                        + f"Shots:              {x.shots}\n"
-                        + f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n"
-                        + f"Power Play Goals:   {x.power_play_goals}\n"
-                        + f"Power Play Points:  {x.power_play_points}\n"
-                        + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
-                        + f"Shorthanded Points: {x.shorthanded_points}\n"
-                        + f"Overtime Goals:     {x.overtime_goals}\n"
-                        + f"Game Winning Goals: {x.game_winning_goals}\n"
-                        + f"Plus/Minus:         {x.plus_minus}```"
-        )
+        embed.description = "```\n" \
+                            f"Games Played:       {x.games}\n" \
+                            f"Goals:              {x.goals}\n" \
+                            f"Assists:            {x.assists}\n" \
+                            f"Points:             {x.points}\n" \
+                            f"PIM:                {x.pim}\n" \
+                            f"Hits:               {x.hits}\n" \
+                            f"Shots:              {x.shots}\n" \
+                            f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n" \
+                            f"Power Play Goals:   {x.power_play_goals}\n" \
+                            f"Power Play Points:  {x.power_play_points}\n" \
+                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
+                            f"Shorthanded Points: {x.shorthanded_points}\n" \
+                            f"Overtime Goals:     {x.overtime_goals}\n" \
+                            f"Game Winning Goals: {x.game_winning_goals}\n" \
+                            f"Plus/Minus:         {x.plus_minus}```"
+
     elif year_start > 1958:
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:       {x.games}\n"
-                        + f"Goals:              {x.goals}\n"
-                        + f"Assists:            {x.assists}\n"
-                        + f"Points:             {x.points}\n"
-                        + f"PIM:                {x.pim}\n"
-                        + f"Shots:              {x.shots}\n"
-                        + f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n"
-                        + f"Power Play Goals:   {x.power_play_goals}\n"
-                        + f"Power Play Points:  {x.power_play_points}\n"
-                        + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
-                        + f"Shorthanded Points: {x.shorthanded_points}\n"
-                        + f"Overtime Goals:     {x.overtime_goals}\n"
-                        + f"Game Winning Goals: {x.game_winning_goals}\n"
-                        + f"Plus/Minus:         {x.plus_minus}```"
-        )
+        embed.description = "```\n" \
+                            f"Games Played:       {x.games}\n" \
+                            f"Goals:              {x.goals}\n" \
+                            f"Assists:            {x.assists}\n" \
+                            f"Points:             {x.points}\n" \
+                            f"PIM:                {x.pim}\n" \
+                            f"Shots:              {x.shots}\n" \
+                            f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n" \
+                            f"Power Play Goals:   {x.power_play_goals}\n" \
+                            f"Power Play Points:  {x.power_play_points}\n" \
+                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
+                            f"Shorthanded Points: {x.shorthanded_points}\n" \
+                            f"Overtime Goals:     {x.overtime_goals}\n" \
+                            f"Game Winning Goals: {x.game_winning_goals}\n" \
+                            f"Plus/Minus:         {x.plus_minus}```"
+
     elif year_start > 1932:
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:       {x.games}\n"
-                        + f"Goals:              {x.goals}\n"
-                        + f"Assists:            {x.assists}\n"
-                        + f"Points:             {x.points}\n"
-                        + f"PIM:                {x.pim}\n"
-                        + f"Power Play Goals:   {x.power_play_goals}\n"
-                        + f"Power Play Points:  {x.power_play_points}\n"
-                        + f"Shorthanded Goals:  {x.shorthanded_goals}\n"
-                        + f"Shorthanded Points: {x.shorthanded_points}\n"
-                        + f"Overtime Goals:     {x.overtime_goals}\n"
-                        + f"Game Winning Goals: {x.game_winning_goals}```"
-        )
+        embed.description = "```\n" \
+                            f"Games Played:       {x.games}\n" \
+                            f"Goals:              {x.goals}\n" \
+                            f"Assists:            {x.assists}\n" \
+                            f"Points:             {x.points}\n" \
+                            f"PIM:                {x.pim}\n" \
+                            f"Power Play Goals:   {x.power_play_goals}\n" \
+                            f"Power Play Points:  {x.power_play_points}\n" \
+                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
+                            f"Shorthanded Points: {x.shorthanded_points}\n" \
+                            f"Overtime Goals:     {x.overtime_goals}\n" \
+                            f"Game Winning Goals: {x.game_winning_goals}```"
+
     else:
-        embed = discord.Embed(
-            title=x.name,
-            description="```\n"
-                        + f"Games Played:       {x.games}\n"
-                        + f"Goals:              {x.goals}\n"
-                        + f"Assists:            {x.assists}\n"
-                        + f"Points:             {x.points}\n"
-                        + f"PIM:                {x.pim}\n"
-                        + f"Overtime Goals:     {x.overtime_goals}\n"
-                        + f"Game Winning Goals: {x.game_winning_goals}```"
-        )
+        embed.description = "```\n" \
+                            + f"Games Played:       {x.games}\n" \
+                            + f"Goals:              {x.goals}\n" \
+                            + f"Assists:            {x.assists}\n" \
+                            + f"Points:             {x.points}\n" \
+                            + f"PIM:                {x.pim}\n" \
+                            + f"Overtime Goals:     {x.overtime_goals}\n" \
+                            + f"Game Winning Goals: {x.game_winning_goals}```"
+
     if fetch_type == "career":
         embed.description = "Career Stats\n" + embed.description
     elif fetch_type == "season":
@@ -219,7 +213,7 @@ def set_skater_embed(x, year_start, year_end, fetch_type):
     return embed
 
 
-async def get_nhl_draft_url(year, draft_round, team_id):
+def get_nhl_draft_url(year, draft_round, team_id):
     if team_id is None and draft_round == 0:
         return 0
     elif draft_round == 0:
@@ -231,7 +225,7 @@ async def get_nhl_draft_url(year, draft_round, team_id):
                f'%20and%20roundNumber={draft_round} '
 
 
-async def getTeamID(team: str, year: int):
+def getTeamID(team: str, year: int):
     if team is None:  # returns None if team is none
         return None
 
@@ -410,9 +404,9 @@ class NHLBot(commands.Cog):
 
         player_list = []
 
-        team_id = await getTeamID(team, year)
+        team_id = getTeamID(team, year)
 
-        url = await get_nhl_draft_url(year, draft_round, team_id)
+        url = get_nhl_draft_url(year, draft_round, team_id)
         if url == 0:
             await ctx.send("Invalid Arguments, input a team with round as 0 for all rounds, or input a round")
             return
@@ -483,21 +477,28 @@ class NHLBot(commands.Cog):
         season = str(season_start_year) + str(season_end_year)
 
         if player is None:
-            team_id = await getTeamID(team, season_start_year)
+            team_id = getTeamID(team, season_start_year)
             season = str(season_start_year) + str(season_end_year)
-
             team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
+            print(team_url)
             player_id = None
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(team_url) as r:
                     res = await r.json()
-                    for items in res['teams']:
-                        for items2 in items['roster']['roster']:
-                            if name == unidecode.unidecode(items2['person']['fullName']):
-                                player_id = items2['person']['id']
-                                player_name = unidecode.unidecode(items2['person']['fullName'])
-                                position = items2['position']['code']
-                                break
+                    print(res)
+                    if 'teams' in res:
+                        for items in res['teams']:
+                            for items2 in items['roster']['roster']:
+                                if name == unidecode.unidecode(items2['person']['fullName']):
+                                    player_id = items2['person']['id']
+                                    player_name = unidecode.unidecode(items2['person']['fullName'])
+                                    position = items2['position']['code']
+                                    break
+                    else:
+                        await ctx.send(f'I couldn\'t find {team} for the {season_start_year}-{season_end_year} season! '
+                                       f'Sorry, blame the NHL. '
+                                       f'Or blame yourself if it didn\'t exist then. Your fault.')
+                        return
 
             if player_id is None:
                 await ctx.send("Player not found, try again.")
@@ -558,7 +559,7 @@ class NHLBot(commands.Cog):
 
     @team.command()
     async def next(self, ctx, team):
-        team_id = await getTeamID(team, datetime.datetime.now().year)
+        team_id = getTeamID(team, datetime.datetime.now().year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.schedule.next"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
@@ -597,13 +598,13 @@ class NHLBot(commands.Cog):
     async def last(self, ctx, team):
         period_list = []
 
-        team_id = await getTeamID(team, datetime.datetime.now().year)
+        team_id = getTeamID(team, datetime.datetime.now().year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.schedule.previous"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
                 for matchup in res['teams']:
-                    try:
+                    if 'previousGameSchedule' in matchup:
                         for schedule in matchup['previousGameSchedule']['dates']:
                             for game in schedule['games']:
                                 game_date = datetime.datetime.strptime(game['gameDate'], '%Y-%m-%dT%H:%M:%S%f%z')
@@ -611,7 +612,7 @@ class NHLBot(commands.Cog):
                                 game_id = game['gamePk']
                                 away_team = game['teams']['away']
                                 home_team = game['teams']['home']
-                    except KeyError:
+                    else:
                         await ctx.send(
                             "Look, there's two things that could've happened here. "
                             "One, you asked for a team that doesn't exist, in which case this is your fault."
@@ -658,28 +659,34 @@ class NHLBot(commands.Cog):
         forward_list = []
         defencemen_list = []
         goalie_list = []
-        team_id = await getTeamID(team, int(season_start_year))
+        team_id = getTeamID(team, int(season_start_year))
         season = str(season_start_year) + str(season_end_year)
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
                 print(res)
-                for team_dict in res['teams']:
-                    for player in team_dict['roster']['roster']:
-                        x = Player()
-                        x.name = player['person']['fullName']
-                        x.position = player['position']['code']
-                        try:
-                            x.jersey_number = player['jerseyNumber']
-                        except KeyError:
-                            print("This dude don't have no jersey number")
-                        if player['position']['code'] == "D":
-                            defencemen_list.append(x)
-                        elif player['position']['code'] == "G":
-                            goalie_list.append(x)
-                        else:
-                            forward_list.append(x)
+                if 'teams' in res:
+                    for team_dict in res['teams']:
+                        for player in team_dict['roster']['roster']:
+                            x = Player()
+                            x.name = player['person']['fullName']
+                            x.position = player['position']['code']
+                            try:
+                                x.jersey_number = player['jerseyNumber']
+                            except KeyError:
+                                print("This dude don't have no jersey number")
+                            if player['position']['code'] == "D":
+                                defencemen_list.append(x)
+                            elif player['position']['code'] == "G":
+                                goalie_list.append(x)
+                            else:
+                                forward_list.append(x)
+                else:
+                    await ctx.send(f'I couldn\'t find {team} for the {season_start_year}-{season_end_year} season! '
+                                   f'Sorry, blame the NHL. '
+                                   f'Or blame yourself if it didn\'t exist then. Your fault.')
+                    return
 
         forwards_string = f"```"
         defencemen_string = f"```"

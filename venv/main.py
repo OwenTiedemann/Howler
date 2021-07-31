@@ -44,7 +44,7 @@ async def cool_down_check(ctx):
         return True
 
 
-@bot.event
+#@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("You're missing a required argument, use howler help <command name> to see the arguments!")
