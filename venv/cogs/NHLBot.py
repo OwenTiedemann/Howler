@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import aiohttp
 import datetime
+import unidecode
 
 
 # Period class to represent a period in a hockey game
@@ -79,7 +80,7 @@ class Goalie:
         return self.saves / self.shots_against
 
     def get_goals_against_average(self):
-        self.minutes_played += self.seconds/60
+        self.minutes_played += self.seconds / 60
         return (self.goals_against * 60) / self.minutes_played
 
 
@@ -99,7 +100,7 @@ def set_goalie_stats(x, stats, year):
     return x
 
 
-def set_goalie_embed(x, year_start, year_end, type):
+def set_goalie_embed(x, year_start, year_end, fetch_type):
     goals_against_average = x.get_goals_against_average()
 
     if year_start > 1954:
@@ -134,15 +135,15 @@ def set_goalie_embed(x, year_start, year_end, type):
                         + f"GAA:             {round(goals_against_average, 2)}```"
         )
 
-    if type == "career":
+    if fetch_type == "career":
         embed.description = "Career Stats\n" + embed.description
-    elif type == "season":
+    elif fetch_type == "season":
         embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
 
     return embed
 
 
-def set_skater_embed(x, year_start, year_end, type):
+def set_skater_embed(x, year_start, year_end, fetch_type):
     if year_start > 1996:
         embed = discord.Embed(
             title=x.name,
@@ -210,42 +211,42 @@ def set_skater_embed(x, year_start, year_end, type):
                         + f"Overtime Goals:     {x.overtime_goals}\n"
                         + f"Game Winning Goals: {x.game_winning_goals}```"
         )
-    if type == "career":
+    if fetch_type == "career":
         embed.description = "Career Stats\n" + embed.description
-    elif type == "season":
+    elif fetch_type == "season":
         embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
 
     return embed
 
 
-async def get_nhl_draft_url(year, round, teamID):
-
-    if teamID is None and round == 0:
+async def get_nhl_draft_url(year, draft_round, team_id):
+    if team_id is None and draft_round == 0:
         return 0
-    elif round == 0:
-        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}'
-    elif teamID is None:
-        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftYear={year}%20and%20roundNumber={round}'
+    elif draft_round == 0:
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={team_id}%20and%20draftYear={year}'
+    elif team_id is None:
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftYear={year}%20and%20roundNumber={draft_round}'
     else:
-        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={teamID}%20and%20draftYear={year}%20and%20roundNumber={round}'
+        return f'https://records.nhl.com/site/api/draft?cayenneExp=draftedByTeamId={team_id}%20and%20draftYear={year}' \
+               f'%20and%20roundNumber={draft_round} '
 
 
 async def getTeamID(team: str, year: int):
-
-    if team is None: #returns None if team is none
+    if team is None:  # returns None if team is none
         return None
 
-    #async with aiohttp.ClientSession() as cs:
-        #async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
-            #res = await r.json()
-            #for items in res['teams']:
-                #if items['name'] == team or items['abbreviation'] == team:
-                    #print(items['id'])
-                    #return int(items['id'])
+    # async with aiohttp.ClientSession() as cs:
+    # async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
+    # res = await r.json()
+    # for items in res['teams']:
+    # if items['name'] == team or items['abbreviation'] == team:
+    # print(items['id'])
+    # return int(items['id'])
 
     # if statement tree for team ids, would use the above code, but it doesn't work for defunct teams or different names
 
-    if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" or team == "Kansas City Scouts" or team == "KCS":
+    if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" \
+            or team == "Kansas City Scouts" or team == "KCS":
         if year < 1976:
             return 48
         elif year < 1982:
@@ -295,7 +296,8 @@ async def getTeamID(team: str, year: int):
         return 15
     elif team == "Chicago Blackhawks" or team == "CHI":
         return 16
-    elif team == "Detroit Red Wings" or team == "DET" or team == "Detroit Cougars" or team == "DCG" or team == "Detroit Falcons" or team == "DFL":
+    elif team == "Detroit Red Wings" or team == "DET" or team == "Detroit Cougars" or team == "DCG" \
+            or team == "Detroit Falcons" or team == "DFL":
         if year < 1930:
             return 40
         elif year < 1932:
@@ -346,7 +348,7 @@ async def getTeamID(team: str, year: int):
         if year < 1920:
             return 42
         return 37
-    elif team == "Pittsburgh Pirates" or team == "PIR" or team == "Philedelphia Quakers" or team == "QUA":
+    elif team == "Pittsburgh Pirates" or team == "PIR" or team == "Philadelphia Quakers" or team == "QUA":
         if year < 1930:
             return 39
         else:
@@ -371,6 +373,29 @@ async def getTeamID(team: str, year: int):
         return 55
 
 
+def set_skater_stats(x, stats, year):
+    if year > 1996:
+        x.hits += stats['stat']['hits']
+    if year > 1958:
+        x.plus_minus += stats['stat']['plusMinus']
+        x.shots += stats['stat']['shots']
+    if year > 1932:
+        x.power_play_goals += stats['stat']['powerPlayGoals']
+        x.power_play_points += stats['stat']['powerPlayPoints']
+        x.shorthanded_goals += stats['stat']['shortHandedGoals']
+        x.shorthanded_points += stats['stat']['shortHandedPoints']
+
+    x.goals += stats['stat']['goals']
+    x.assists += stats['stat']['assists']
+    x.pim += stats['stat']['pim']
+    x.games += stats['stat']['games']
+    x.game_winning_goals += stats['stat']['gameWinningGoals']
+    x.overtime_goals += stats['stat']['overTimeGoals']
+    x.points += stats['stat']['points']
+
+    return x
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -381,13 +406,13 @@ class NHLBot(commands.Cog):
         pass
 
     @nhl.command()
-    async def draft(self, ctx, year: int, round=0, team=None):
+    async def draft(self, ctx, year: int, draft_round=0, team=None):
 
         player_list = []
 
-        teamID = await getTeamID(team, year)
+        team_id = await getTeamID(team, year)
 
-        url = await get_nhl_draft_url(year, round, teamID)
+        url = await get_nhl_draft_url(year, draft_round, team_id)
         if url == 0:
             await ctx.send("Invalid Arguments, input a team with round as 0 for all rounds, or input a round")
             return
@@ -418,13 +443,14 @@ class NHLBot(commands.Cog):
                 players += f"Pick: {player.pick:<3} Team: {player.team} \nPlayer: {player.position:} {player.name:20}\n"
 
             embed = discord.Embed(
-                title=f"{year} NHL Draft: Round {round}",
+                title=f"{year} NHL Draft: Round {draft_round}",
             )
 
-        elif round == 0:
+        elif draft_round == 0:
             for player in player_list:
                 player.name = f"{player.firstName} {player.lastName}"
-                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \nPlayer: {player.position:} {player.name:20}\n"
+                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \n" \
+                           f"Player: {player.position:} {player.name:20}\n "
 
             embed = discord.Embed(
                 title=f"{team} {year} NHL Draft",
@@ -433,10 +459,11 @@ class NHLBot(commands.Cog):
         else:
             for player in player_list:
                 player.name = f"{player.firstName} {player.lastName}"
-                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \nPlayer: {player.position:} {player.name:20}\n"
+                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \n" \
+                           f"Player: {player.position:} {player.name:20}\n"
 
             embed = discord.Embed(
-                title=f"{team} {year} draft round {round}",
+                title=f"{team} {year} draft round {draft_round}",
             )
 
         players += "```"
@@ -444,50 +471,31 @@ class NHLBot(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    def set_skater_stats(self, x, stats, year):
-        if year > 1996:
-            x.hits += stats['stat']['hits']
-        if year > 1958:
-            x.plus_minus += stats['stat']['plusMinus']
-            x.shots += stats['stat']['shots']
-        if year > 1932:
-            x.power_play_goals += stats['stat']['powerPlayGoals']
-            x.power_play_points += stats['stat']['powerPlayPoints']
-            x.shorthanded_goals += stats['stat']['shortHandedGoals']
-            x.shorthanded_points += stats['stat']['shortHandedPoints']
-
-        x.goals += stats['stat']['goals']
-        x.assists += stats['stat']['assists']
-        x.pim += stats['stat']['pim']
-        x.games += stats['stat']['games']
-        x.game_winning_goals += stats['stat']['gameWinningGoals']
-        x.overtime_goals += stats['stat']['overTimeGoals']
-        x.points += stats['stat']['points']
-
-        return x
-
     @nhl.command()
-    async def player(self, ctx, name, team, season_start_year: int, season_end_year: int, type: str):
+    async def player(self, ctx, name, team, season_start_year: int, season_end_year: int, fetch_type: str):
         type_list = ["career", "season"]
-        if type not in type_list:
+        if fetch_type not in type_list:
             await ctx.send("Type must be either \"career\" or \"season\"")
 
+        name = unidecode.unidecode(name)
+
         player = await self.bot.player_collection.find_one({'fullName': name})
+        season = str(season_start_year) + str(season_end_year)
 
         if player is None:
-            teamID = await getTeamID(team, season_start_year)
+            team_id = await getTeamID(team, season_start_year)
             season = str(season_start_year) + str(season_end_year)
 
-            team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
+            team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
             player_id = None
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(team_url) as r:
                     res = await r.json()
                     for items in res['teams']:
                         for items2 in items['roster']['roster']:
-                            if name == items2['person']['fullName']:
+                            if name == unidecode.unidecode(items2['person']['fullName']):
                                 player_id = items2['person']['id']
-                                player_name = items2['person']['fullName']
+                                player_name = unidecode.unidecode(items2['person']['fullName'])
                                 position = items2['position']['code']
                                 break
 
@@ -506,9 +514,10 @@ class NHLBot(commands.Cog):
 
         player_url = ""
 
-        if type == "season":
-            player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=statsSingleSeason&season={season}"
-        elif type == "career":
+        if fetch_type == "season":
+            player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
+                         f"/stats?stats=statsSingleSeason&season={season}"
+        elif fetch_type == "career":
             player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=yearByYear"
 
         if position == "G":
@@ -522,24 +531,25 @@ class NHLBot(commands.Cog):
                 for items in res['stats']:
                     for items2 in items['splits']:
                         year = int(str(items2['season'])[:4])
-                        if type == "career":
-                            if items2['league']['name'] == "NHL" or items2['league']['name'] == "National Hockey League":
+                        if fetch_type == "career":
+                            if items2['league']['name'] == "NHL" \
+                                    or items2['league']['name'] == "National Hockey League":
                                 if position == "G":
                                     x = set_goalie_stats(x, items2, year)
                                 else:
 
-                                    x = self.set_skater_stats(x, items2, year)
-                        elif type == "season":
+                                    x = set_skater_stats(x, items2, year)
+                        elif fetch_type == "season":
                             if position == "G":
                                 x = set_goalie_stats(x, items2, year)
                             else:
-                                x = self.set_skater_stats(x, items2, year)
+                                x = set_skater_stats(x, items2, year)
 
         if position == "G":
-            embed = set_goalie_embed(x, season_start_year, season_end_year, type)
+            embed = set_goalie_embed(x, season_start_year, season_end_year, fetch_type)
             await ctx.send(embed=embed)
         else:
-            embed = set_skater_embed(x, season_start_year, season_end_year, type)
+            embed = set_skater_embed(x, season_start_year, season_end_year, fetch_type)
             await ctx.send(embed=embed)
 
     @nhl.group()
@@ -548,23 +558,24 @@ class NHLBot(commands.Cog):
 
     @team.command()
     async def next(self, ctx, team):
-        teamID = await getTeamID(team, datetime.datetime.now().year)
-        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.next"
+        team_id = await getTeamID(team, datetime.datetime.now().year)
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.schedule.next"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
                 print(res)
                 for matchup in res['teams']:
-                    try:
+                    if 'nextGameSchedule' in matchup:
                         for schedule in matchup['nextGameSchedule']['dates']:
                             for game in schedule['games']:
-                                game_date = datetime.datetime.strptime(game['gameDate'],'%Y-%m-%dT%H:%M:%S%f%z')
+                                game_date = datetime.datetime.strptime(game['gameDate'], '%Y-%m-%dT%H:%M:%S%f%z')
                                 game_status = game['status']
                                 away_team = game['teams']['away']
                                 home_team = game['teams']['home']
-                    except KeyError:
+                    else:
                         await ctx.send(
-                            "Look, there's two things that could've happened here. One, you asked for a team that doesn't exist, in which case this is your fault."
+                            "Look, there's two things that could've happened here. One, you asked for a team that "
+                            "doesn't exist, in which case this is your fault. "
                             " Two, I screwed up and you're allowed to yell at me. I hope it's the first one.")
                         return
 
@@ -574,9 +585,11 @@ class NHLBot(commands.Cog):
         )
 
         embed.add_field(name=f"{away_team['team']['name']}",
-                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-{away_team['leagueRecord']['ot']}```")
+                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-"
+                              f"{away_team['leagueRecord']['ot']}```")
         embed.add_field(name=f"{home_team['team']['name']}",
-                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-{home_team['leagueRecord']['ot']}```")
+                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-"
+                              f"{home_team['leagueRecord']['ot']}```")
 
         await ctx.send(embed=embed)
 
@@ -584,8 +597,8 @@ class NHLBot(commands.Cog):
     async def last(self, ctx, team):
         period_list = []
 
-        teamID = await getTeamID(team, datetime.datetime.now().year)
-        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.schedule.previous"
+        team_id = await getTeamID(team, datetime.datetime.now().year)
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.schedule.previous"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
@@ -600,7 +613,8 @@ class NHLBot(commands.Cog):
                                 home_team = game['teams']['home']
                     except KeyError:
                         await ctx.send(
-                            "Look, there's two things that could've happened here. One, you asked for a team that doesn't exist, in which case this is your fault."
+                            "Look, there's two things that could've happened here. "
+                            "One, you asked for a team that doesn't exist, in which case this is your fault."
                             "Two, I screwed up and you're allowed to yell at me. I hope it's the first one.")
                         return
 
@@ -616,32 +630,37 @@ class NHLBot(commands.Cog):
 
         embed = discord.Embed(
             title=f"{away_team['team']['name']} AT {home_team['team']['name']}",
-            description=f"```Date: {game_date} \nStatus: {game_status['detailedState']} \nScore: {away_team['score']}-{home_team['score']}```"
+            description=f"```Date: {game_date} \nStatus: {game_status['detailedState']} \nScore: {away_team['score']}-"
+                        f"{home_team['score']}```"
         )
 
         away_periods = ""
         home_periods = ""
 
         for period in period_list:
-            away_periods += f"{period.period} period:\n Shots: {period.away['shotsOnGoal']}\n Goals: {period.away['goals']}\n"
-            home_periods += f"{period.period} period:\n Shots: {period.home['shotsOnGoal']}\n Goals: {period.home['goals']}\n"
+            away_periods += f"{period.period} period:\n Shots: {period.away['shotsOnGoal']}\n" \
+                            f" Goals: {period.away['goals']}\n"
+            home_periods += f"{period.period} period:\n Shots: {period.home['shotsOnGoal']}\n" \
+                            f" Goals: {period.home['goals']}\n"
 
         embed.add_field(name=f"{away_team['team']['name']}",
-                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-{away_team['leagueRecord']['ot']}\n{away_periods}```")
+                        value=f"```Record: {away_team['leagueRecord']['wins']}-{away_team['leagueRecord']['losses']}-"
+                              f"{away_team['leagueRecord']['ot']}\n{away_periods}```")
         embed.add_field(name=f"{home_team['team']['name']}",
-                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-{home_team['leagueRecord']['ot']}\n{home_periods}```")
+                        value=f"```Record: {home_team['leagueRecord']['wins']}-{home_team['leagueRecord']['losses']}-"
+                              f"{home_team['leagueRecord']['ot']}\n{home_periods}```")
 
         await ctx.send(embed=embed)
 
     @team.command()
     @commands.cooldown(1, 60, commands.BucketType.channel)
     async def roster(self, ctx, team, season_start_year, season_end_year):
-        forward_list=[]
-        defenseman_list=[]
-        goalie_list=[]
-        teamID = await getTeamID(team, int(season_start_year))
+        forward_list = []
+        defencemen_list = []
+        goalie_list = []
+        team_id = await getTeamID(team, int(season_start_year))
         season = str(season_start_year) + str(season_end_year)
-        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{teamID}?expand=team.roster&season={season}"
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
@@ -656,28 +675,28 @@ class NHLBot(commands.Cog):
                         except KeyError:
                             print("This dude don't have no jersey number")
                         if player['position']['code'] == "D":
-                            defenseman_list.append(x)
+                            defencemen_list.append(x)
                         elif player['position']['code'] == "G":
                             goalie_list.append(x)
                         else:
                             forward_list.append(x)
 
-        forwards_string=f"```"
-        defensemen_string=f"```"
-        goalies_string=f"```"
+        forwards_string = f"```"
+        defencemen_string = f"```"
+        goalies_string = f"```"
 
         for forward in forward_list:
             forwards_string += f"{forward.jersey_number:<3}{forward.position} {forward.name}\n"
 
         forwards_string += "```"
 
-        for defenseman in defenseman_list:
-            defensemen_string += f"{defenseman.jersey_number:<3}{defenseman.position} {defenseman.name}\n"
+        for defenceman in defencemen_list:
+            defencemen_string += f"{defenceman.jersey_number:<3}{defenceman.position} {defenceman.name}\n"
 
         for goalie in goalie_list:
             goalies_string += f"{goalie.jersey_number:<3}{goalie.position} {goalie.name}\n"
 
-        defensemen_string += "```"
+        defencemen_string += "```"
         goalies_string += "```"
 
         embed = discord.Embed(
@@ -685,7 +704,7 @@ class NHLBot(commands.Cog):
         )
 
         embed.add_field(name="Forwards", value=forwards_string, inline=False)
-        embed.add_field(name="Defensemen", value=defensemen_string, inline=False)
+        embed.add_field(name="Defencemen", value=defencemen_string, inline=False)
         embed.add_field(name="Goalies", value=goalies_string, inline=False)
 
         await ctx.send(embed=embed)

@@ -1,6 +1,5 @@
 import discord
-from discord.ext import commands, tasks
-import motor.motor_asyncio
+from discord.ext import commands
 
 
 class TriviaBot(commands.Cog):
@@ -30,36 +29,36 @@ class TriviaBot(commands.Cog):
             await ctx.send('The leaderboard is empty, complete a trivia question in the season first!')
             return
 
-        userNames = []
-        userScores = []
+        user_names = []
+        user_scores = []
 
         users = await season_user_collection.find().to_list(length=None)
 
         for user in users:
             points, name = user['number_correct'], user['display_name']
-            userNames.append(name)
-            userScores.append(points)
+            user_names.append(name)
+            user_scores.append(points)
 
         embed = discord.Embed(
             title=str(season) + " Trivia Leaderboard",
             color=discord.Colour.blue(),
         )
 
-        zipped_lists = zip(userScores, userNames)
+        zipped_lists = zip(user_scores, user_names)
         sorted_pairs = sorted(zipped_lists)
 
         tuples = zip(*sorted_pairs)
-        userScores, userNames = [list(tuple) for tuple in tuples]
+        user_scores, user_names = [list(tuple) for tuple in tuples]
 
-        userScores.reverse()
-        userNames.reverse()
+        user_scores.reverse()
+        user_names.reverse()
         ranks = []
-        for rank in range(len(userScores)):
+        for rank in range(len(user_scores)):
             ranks.append(rank + 1)
 
         leaderboard_string = "```\n"
 
-        for (user, score, rank) in zip(userNames, userScores, ranks):
+        for (user, score, rank) in zip(user_names, user_scores, ranks):
             if rank > 10:
                 break
             leaderboard_string += f"{rank:<3}{user:<20} {score}\n"

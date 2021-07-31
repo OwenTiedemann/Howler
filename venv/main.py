@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import motor.motor_asyncio
 import config
 
@@ -17,7 +17,8 @@ initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot']
 whitelisted_channels = ['bot-spam', 'trivia', 'trivia-discussion', 'trivia-setup', 'test-commands', 'game-thread']
 whitelisted_categories = [432008796106391565]
 
-_cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.channel) # from ?tag cooldown mapping
+_cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.channel)  # from ?tag cooldown mapping
+
 
 @bot.check
 async def restrict_commands(ctx):
@@ -28,8 +29,9 @@ async def restrict_commands(ctx):
     else:
         return False
 
+
 @bot.check
-async def cooldown_check(ctx):
+async def cool_down_check(ctx):
     if ctx.channel.category.id in whitelisted_categories:
         return True
     if ctx.channel.name == "game-thread":
@@ -41,6 +43,7 @@ async def cooldown_check(ctx):
     else:
         return True
 
+
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -50,41 +53,42 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CheckFailure):
         await ctx.send("You do not have permission to use this command!")
     elif isinstance(error, commands.CommandInvokeError):
-        await ctx.send(f"{error}\nIf this is a \"KeyError:\" it's probably because the season you requested doesn't have the data more recent seasons do, sometimes I can fix that. \n If not, DM Roman with the command and the error and he'll fix it. Sorry")
+        await ctx.send(
+            f"{error}\nIf this is a \"KeyError:\" it's probably because the season you requested doesn't have the data "
+            f"more recent seasons do, sometimes I can fix that. \n If not, DM Roman with the command and the error and"
+            f" he'll fix it. Sorry")
     elif isinstance(error, commands.CommandNotFound):
         pass
     else:
-        await ctx.send(f"{error}\nIf you're getting this message, I don't have a check for this specific error, so congrats you get to help Roman add a new one! yay! DM him with the command and error and he'll get around to it.")
+        await ctx.send(
+            f"{error}\nIf you're getting this message, I don't have a check for this specific error, so congrats you "
+            f"get to help Roman add a new one! yay! DM him with the command and error and he'll get around to it.")
 
 
 @bot.command()
 @commands.is_owner()
-async def load(ctx, extension):
-    bot.load_extension(f'cogs.{extension}')
-    await ctx.send(f"Loaded the {extension} cog")
+async def load(ctx, bot_extension):
+    bot.load_extension(f'cogs.{bot_extension}')
+    await ctx.send(f"Loaded the {bot_extension} cog")
 
 
 @bot.command()
 @commands.is_owner()
-async def unload(ctx, extension):
-    bot.unload_extension(f'cogs.{extension}')
-    await ctx.send(f"Unloaded the {extension} cog")
+async def unload(ctx, bot_extension):
+    bot.unload_extension(f'cogs.{bot_extension}')
+    await ctx.send(f"Unloaded the {bot_extension} cog")
 
 
 @bot.command()
 @commands.is_owner()
-async def reload(ctx, extension):
-    bot.unload_extension(f'cogs.{extension}')
-    bot.load_extension(f'cogs.{extension}')
-    await ctx.send(f"Reloaded the {extension} cog")
+async def reload(ctx, bot_extension):
+    bot.unload_extension(f'cogs.{bot_extension}')
+    bot.load_extension(f'cogs.{bot_extension}')
+    await ctx.send(f"Reloaded the {bot_extension} cog")
+
 
 if __name__ == '__main__':
     for extension in initial_extensions:
         bot.load_extension(extension)
 
     bot.run(config.discord_token)
-
-
-
-
-
