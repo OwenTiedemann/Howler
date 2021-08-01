@@ -659,8 +659,13 @@ class NHLBot(commands.Cog):
         forward_list = []
         defencemen_list = []
         goalie_list = []
+
         team_id = getTeamID(team, int(season_start_year))
+        if team_id is None:
+            await ctx.send("Couldn't find that team, try again.")
+            return
         season = str(season_start_year) + str(season_end_year)
+
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
@@ -672,10 +677,10 @@ class NHLBot(commands.Cog):
                             x = Player()
                             x.name = player['person']['fullName']
                             x.position = player['position']['code']
-                            try:
+                            if 'jerseyNumber' in player:
                                 x.jersey_number = player['jerseyNumber']
-                            except KeyError:
-                                print("This dude don't have no jersey number")
+                            else:
+                                pass
                             if player['position']['code'] == "D":
                                 defencemen_list.append(x)
                             elif player['position']['code'] == "G":

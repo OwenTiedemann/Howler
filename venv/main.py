@@ -44,7 +44,7 @@ async def cool_down_check(ctx):
         return True
 
 
-#@bot.event
+@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("You're missing a required argument, use howler help <command name> to see the arguments!")
@@ -55,10 +55,14 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send(
             f"{error}\nIf this is a \"KeyError:\" it's probably because the season you requested doesn't have the data "
-            f"more recent seasons do, sometimes I can fix that. \n If not, DM Roman with the command and the error and"
-            f" he'll fix it. Sorry")
+            f"more recent seasons do, but I can probably write a specific error message for it. "
+            f"DM Roman the command and the error message."
+            f" If it isn't that error, DM Roman the info anyway.")
     elif isinstance(error, commands.CommandNotFound):
-        pass
+        if ctx.channel.name in whitelisted_channels or ctx.channel.category.id in whitelisted_categories:
+            await ctx.send("That command doesn't exist, use howler help to find the correct usage!")
+        else:
+            pass
     else:
         await ctx.send(
             f"{error}\nIf you're getting this message, I don't have a check for this specific error, so congrats you "
