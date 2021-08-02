@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 import aiohttp
 import datetime
 import unidecode
@@ -390,6 +390,14 @@ def set_skater_stats(x, stats, year):
     return x
 
 
+class EmbedPages(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=1)
+
+    async def format_page(self, menu, entries):
+        return entries
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -414,6 +422,7 @@ class NHLBot(commands.Cog):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as r:
                 res = await r.json()  # returns dict
+                print(res)
                 for key in res.items():
                     for values in key:
                         if values == "data" or values == "total" or type(values) is int:
@@ -711,15 +720,20 @@ class NHLBot(commands.Cog):
         defencemen_string += "```"
         goalies_string += "```"
 
-        embed = discord.Embed(
-            title=f"{team} {season_start_year}-{season_end_year} roster"
-        )
+        type_list = ['Forwards', 'Defencemen', 'Goalies']
 
-        embed.add_field(name="Forwards", value=forwards_string, inline=False)
-        embed.add_field(name="Defencemen", value=defencemen_string, inline=False)
-        embed.add_field(name="Goalies", value=goalies_string, inline=False)
+        string_list = [forwards_string, defencemen_string, goalies_string]
+        embed_list = []
 
-        await ctx.send(embed=embed)
+        for position_type, string in zip(type_list, string_list):
+            embed = discord.Embed(
+                title=f"{team} {season_start_year}-{season_end_year} {position_type}",
+                description=string
+            )
+            embed_list.append(embed)
+
+        pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+        await pages.start(ctx)
 
 
 def setup(bot):
