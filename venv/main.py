@@ -11,11 +11,14 @@ bot.database = database_client['ArizonaCoyotesDiscord']
 player_database = database_client['Players']
 bot.player_collection = player_database['Players']
 bot.trivia_database = database_client['database']
+bot.image_database = database_client['images']
 
-initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot']
+initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot']
 
 whitelisted_channels = ['bot-spam', 'trivia', 'trivia-discussion', 'trivia-setup', 'test-commands', 'game-thread']
 whitelisted_categories = [432008796106391565]
+
+bot.image_commands = []
 
 _cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.channel)  # from ?tag cooldown mapping
 
@@ -42,6 +45,19 @@ async def cool_down_check(ctx):
         return True
     else:
         return True
+
+
+@bot.event
+async def on_message(message):
+    if message.content.startswith("howler ") or message.content.startswith("Howler "):
+        res = message.content[0].lower() + message.content[1:]
+        for command in bot.image_commands:
+            if res == command.command:
+                file = discord.File(f"images/{command.file}")
+                await message.channel.send(file=file)
+                return
+
+    await bot.process_commands(message)
 
 
 @bot.event
