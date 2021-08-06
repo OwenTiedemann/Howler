@@ -15,22 +15,26 @@ class Period:
 
 # Player class to represent a player, used in nhl team roster and nhl player commands
 class Player:
-    def __init__(self):
-        self.firstName = ""
-        self.lastName = ""
-        self.position = ""
-        self.round = 0
-        self.pick = 0
-        self.team = ""
-        self.name = ""
+    def __init__(self, name, position, team):
+        self.name = name
+        self.position = position
+        self.team = team
         self.jersey_number = 0
 
 
+class Draftee(Player):
+    def __init__(self, name, position, team, draft_round, pick, pick_history, drafted_from):
+        super().__init__(name, position, team)
+        self.draft_round = draft_round
+        self.pick = pick
+        self.pick_history = pick_history
+        self.drafted_from = drafted_from
+
+
 # Skater class to represent a skater, used in nhl player command
-class Skater:
-    def __init__(self, name, position):
-        self.name = name
-        self.position = position
+class Skater(Player):
+    def __init__(self, name, position, team):
+        super().__init__(name, position, team)
         self.assists = 0
         self.goals = 0
         self.pim = 0
@@ -53,10 +57,9 @@ class Skater:
 
 
 # Goalie class to represent a goalie, used in nhl player command
-class Goalie:
-    def __init__(self, name, position):
-        self.name = name
-        self.position = position
+class Goalie(Player):
+    def __init__(self, name, position, team):
+        super().__init__(name, position, team)
         self.minutes = 0
         self.wins = 0
         self.losses = 0
@@ -403,7 +406,7 @@ class NHLBot(commands.Cog):
         self.bot = bot
         self.player_collection = bot.player_collection
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()  # invoke_without_command=True)
     async def nhl(self, ctx):
         pass
 
@@ -423,56 +426,36 @@ class NHLBot(commands.Cog):
             async with cs.get(url) as r:
                 res = await r.json()  # returns dict
                 print(res)
-                for key in res.items():
-                    for values in key:
-                        if values == "data" or values == "total" or type(values) is int:
-                            pass
-                        else:
-                            for player in values:
-                                x = Player()
-                                x.firstName = player['firstName']
-                                x.lastName = player['lastName']
-                                x.position = player['position']
-                                x.round = player['roundNumber']
-                                x.pick = player['overallPickNumber']
-                                x.team = player['teamPickHistory']
-                                player_list.append(x)
+                for player in res['data']:
+                    x = Draftee(player['playerName'],
+                                player['position'],
+                                player['triCode'],
+                                player['roundNumber'],
+                                player['overallPickNumber'],
+                                player['teamPickHistory'],
+                                f"{player['amateurClubName']} {player['amateurLeague']}")
+                    player_list.append(x)
 
-        players = "```"
+        embed_list = []
 
-        if team is None:
-            for player in player_list:
-                player.name = f"{player.firstName} {player.lastName}"
-                players += f"Pick: {player.pick:<3} Team: {player.team} \nPlayer: {player.position:} {player.name:20}\n"
-
+        for player in player_list:
             embed = discord.Embed(
-                title=f"{year} NHL Draft: Round {draft_round}",
+                title=f"{year} Draft: Pick {player.pick}",
+                description="```"
+                            f"Player:       {player.name}\n"
+                            f"Pick:         {player.pick}\n"
+                            f"Round:        {player.draft_round}\n"
+                            f"Position:     {player.position}\n"
+                            f"Drafted From: {player.drafted_from}\n"
+                            f"Drafted By:   {player.team}\n"
+                            f"Pick History: {player.pick_history}\n"
+                            f"```"
             )
 
-        elif draft_round == 0:
-            for player in player_list:
-                player.name = f"{player.firstName} {player.lastName}"
-                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \n" \
-                           f"Player: {player.position:} {player.name:20}\n "
+            embed_list.append(embed)
 
-            embed = discord.Embed(
-                title=f"{team} {year} NHL Draft",
-            )
-
-        else:
-            for player in player_list:
-                player.name = f"{player.firstName} {player.lastName}"
-                players += f"Pick: {player.pick:<3} Round: {player.round:<2} Team: {player.team} \n" \
-                           f"Player: {player.position:} {player.name:20}\n"
-
-            embed = discord.Embed(
-                title=f"{team} {year} draft round {draft_round}",
-            )
-
-        players += "```"
-        embed.description = players
-
-        await ctx.send(embed=embed)
+        pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+        await pages.start(ctx)
 
     @nhl.command()
     async def player(self, ctx, name, team, season_start_year: int, season_end_year: int, fetch_type: str):
@@ -480,85 +463,93 @@ class NHLBot(commands.Cog):
         if fetch_type not in type_list:
             await ctx.send("Type must be either \"career\" or \"season\"")
 
-        name = unidecode.unidecode(name)
+        name = unidecode.unidecode(name)  # decodes name for special symbols
 
         player = await self.bot.player_collection.find_one({'fullName': name})
         season = str(season_start_year) + str(season_end_year)
 
-        if player is None:
-            team_id = getTeamID(team, season_start_year)
-            season = str(season_start_year) + str(season_end_year)
+        if player is None:  # if player is not already in the database
+            team_id = getTeamID(team, season_start_year)  # get the team ID
+            season = str(season_start_year) + str(season_end_year)  # put together a valid seasons string
             team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
-            print(team_url)
-            player_id = None
-            async with aiohttp.ClientSession() as cs:
+            # build the api url call
+            print(team_url)  # print it for debugging purposes
+            player_id = None  # set player id to none for a check later
+
+            async with aiohttp.ClientSession() as cs:  # gets the data from the website
                 async with cs.get(team_url) as r:
                     res = await r.json()
-                    print(res)
+                    print(res)  # prints the dict for debugging purposes
                     if 'teams' in res:
                         for items in res['teams']:
                             for items2 in items['roster']['roster']:
-                                if name == unidecode.unidecode(items2['person']['fullName']):
+                                if name == unidecode.unidecode(
+                                        items2['person']['fullName']):  # decodes name from database and checks it
                                     player_id = items2['person']['id']
                                     player_name = unidecode.unidecode(items2['person']['fullName'])
                                     position = items2['position']['code']
                                     break
-                    else:
+                    else:  # if it was an invalid url it will return this string
                         await ctx.send(f'I couldn\'t find {team} for the {season_start_year}-{season_end_year} season! '
                                        f'Sorry, blame the NHL. '
                                        f'Or blame yourself if it didn\'t exist then. Your fault.')
                         return
 
-            if player_id is None:
+            if player_id is None:  # if it couldn't find the player on that roster, it returns this string
                 await ctx.send("Player not found, try again.")
                 return
-            else:
+
+            else:  # double checks to make sure the player was not in the database and does nothing if it is
                 if await self.bot.player_collection.count_documents({"_id": player_id}, limit=1) != 0:
                     pass
-                else:
+                else:  # adds the player to the database
                     player_dict = {"_id": player_id, 'fullName': player_name, 'position': position}
                     await self.bot.player_collection.insert_one(player_dict)
-        else:
+
+        else:  # if the player was in the database it sets these values
             player_id = player['_id']
             position = player['position']
 
         player_url = ""
 
-        if fetch_type == "season":
+        if fetch_type == "season":  # builds the url for a player for one season
             player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
                          f"/stats?stats=statsSingleSeason&season={season}"
-        elif fetch_type == "career":
+        elif fetch_type == "career":  # builds the url for a player for their career
             player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=yearByYear"
 
-        if position == "G":
-            x = Goalie(name, position)
+        if position == "G":  # creates a class for the player
+            x = Goalie(name, position, team)
         else:
-            x = Skater(name, position)
+            x = Skater(name, position, team)
 
-        async with aiohttp.ClientSession() as cs:
+        async with aiohttp.ClientSession() as cs:  # pulls data from the website
             async with cs.get(player_url) as r:
                 res = await r.json()
                 for items in res['stats']:
                     for items2 in items['splits']:
-                        year = int(str(items2['season'])[:4])
+                        year = int(str(items2['season'])[
+                                   :4])  # gets the first year of the season so that it can check what values are valid
                         if fetch_type == "career":
                             if items2['league']['name'] == "NHL" \
-                                    or items2['league']['name'] == "National Hockey League":
+                                    or items2['league']['name'] == "National Hockey League":  # only checks stats for
+                                # NHL seasons
                                 if position == "G":
                                     x = set_goalie_stats(x, items2, year)
                                 else:
 
                                     x = set_skater_stats(x, items2, year)
-                        elif fetch_type == "season":
+
+                        elif fetch_type == "season":  # just checks that year stats
                             if position == "G":
                                 x = set_goalie_stats(x, items2, year)
                             else:
                                 x = set_skater_stats(x, items2, year)
 
-        if position == "G":
+        if position == "G":  # builds goalie embed
             embed = set_goalie_embed(x, season_start_year, season_end_year, fetch_type)
             await ctx.send(embed=embed)
-        else:
+        else:  # builds skater embed
             embed = set_skater_embed(x, season_start_year, season_end_year, fetch_type)
             await ctx.send(embed=embed)
 
@@ -683,7 +674,9 @@ class NHLBot(commands.Cog):
                 if 'teams' in res:
                     for team_dict in res['teams']:
                         for player in team_dict['roster']['roster']:
-                            x = Player()
+                            x = Player(player['person']['fullName'],
+                                       player['position']['code'],
+                                       team)
                             x.name = player['person']['fullName']
                             x.position = player['position']['code']
                             if 'jerseyNumber' in player:

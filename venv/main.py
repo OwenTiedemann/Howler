@@ -49,7 +49,10 @@ async def cool_down_check(ctx):
 
 @bot.event
 async def on_message(message):
-    if message.content.startswith("howler ") or message.content.startswith("Howler "):
+    x = message.content.lower()
+    if 'tocchet' in x:
+        await message.add_reaction('\U0001F422')
+    if message.content.startswith(("howler ", "Howler ")):
         res = message.content[0].lower() + message.content[1:]
         for command in bot.image_commands:
             if res == command.command:
