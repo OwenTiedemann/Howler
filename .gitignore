@@ -1,3 +1,5 @@
 /venv/config.py
-/venv/congs/config.py
+/venv/cogs/config.py
 /.idea
+/venv/lib
+/venv/Scripts
