@@ -20,7 +20,7 @@ whitelisted_categories = [432008796106391565]
 
 bot.image_commands = []
 
-_cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.channel)  # from ?tag cooldown mapping
+_cd = commands.CooldownMapping.from_cooldown(1.0, 20.0, commands.BucketType.channel)  # from ?tag cooldown mapping
 
 
 @bot.check

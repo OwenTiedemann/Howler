@@ -4,6 +4,12 @@ import aiohttp
 import datetime
 import unidecode
 
+blacklisted_stat_types = ['timeOnIce', 'powerPlayTimeOnIce', 'evenTimeOnIce', 'shortHandedTimeOnIce',
+                          'timeOnIcePerGame', 'evenTimeOnIcePerGame', 'shortHandedTimeOnIcePerGame',
+                          'powerPlayTimeOnIcePerGame', 'powerPlaySaves', 'shortHandedSaves', 'evenSaves',
+                          'shortHandedShots', 'evenShots', 'powerPlayShots', 'powerPlaySavePercentage',
+                          'shortHandedSavePercentage', 'evenStrengthSavePercentage']
+
 
 # Period class to represent a period in a hockey game
 class Period:
@@ -85,135 +91,6 @@ class Goalie(Player):
     def get_goals_against_average(self):  # retrieves GAA by dividing goals against by minutes played
         self.minutes_played += self.seconds / 60
         return (self.goals_against * 60) / self.minutes_played
-
-
-def set_goalie_stats(x, stats, year):
-    if year > 1954:  # only adds these stats if the year is after 1954
-        x.shots_against += stats['stat']['shotsAgainst']
-        x.saves += stats['stat']['saves']
-
-    x.wins += stats['stat']['wins']
-    x.losses += stats['stat']['losses']
-    x.set_minutes(stats['stat']['timeOnIce'])
-    x.goals_against += stats['stat']['goalsAgainst']
-    x.shutouts += stats['stat']['shutouts']
-    x.games_played += stats['stat']['games']
-    x.games_started += stats['stat']['gamesStarted']
-
-    return x
-
-
-def set_goalie_embed(x, year_start, year_end, fetch_type):
-    goals_against_average = x.get_goals_against_average()
-
-    embed = discord.Embed(
-        title=x.name
-    )
-
-    if year_start > 1954:  # sets this
-        save_percentage = x.get_save_percentage()
-        embed.description = "```\n" \
-                            f"Games Played:    {x.games_played}\n" \
-                            f"Wins:            {x.wins}\n" \
-                            f"Losses:          {x.losses}\n" \
-                            f"Shutouts:        {x.shutouts}\n" \
-                            f"Games Played:    {x.games_played}\n" \
-                            f"Games Started:   {x.games_started}\n" \
-                            f"Shots Against:   {x.shots_against}\n" \
-                            f"Saves:           {x.saves}\n" \
-                            f"Goals Against:   {x.goals_against}\n" \
-                            f"Save Percentage: {round(save_percentage, 3)}\n" \
-                            f"GAA:             {round(goals_against_average, 2)}```"
-
-    else:
-        embed.description = "```\n" \
-                            f"Games Played:    {x.games_played}\n" \
-                            f"Wins:            {x.wins}\n" \
-                            f"Losses:          {x.losses}\n" \
-                            f"Shutouts:        {x.shutouts}\n" \
-                            f"Games Played:    {x.games_played}\n" \
-                            f"Games Started:   {x.games_started}\n" \
-                            f"Goals Against:   {x.goals_against}\n" \
-                            f"GAA:             {round(goals_against_average, 2)}```"
-
-    if fetch_type == "career":
-        embed.description = "Career Stats\n" + embed.description
-    elif fetch_type == "season":
-        embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
-
-    return embed
-
-
-def set_skater_embed(x, year_start, year_end, fetch_type):
-    embed = discord.Embed(
-        title=x.name
-    )
-
-    if year_start > 1996:
-        embed.description = "```\n" \
-                            f"Games Played:       {x.games}\n" \
-                            f"Goals:              {x.goals}\n" \
-                            f"Assists:            {x.assists}\n" \
-                            f"Points:             {x.points}\n" \
-                            f"PIM:                {x.pim}\n" \
-                            f"Hits:               {x.hits}\n" \
-                            f"Shots:              {x.shots}\n" \
-                            f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n" \
-                            f"Power Play Goals:   {x.power_play_goals}\n" \
-                            f"Power Play Points:  {x.power_play_points}\n" \
-                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
-                            f"Shorthanded Points: {x.shorthanded_points}\n" \
-                            f"Overtime Goals:     {x.overtime_goals}\n" \
-                            f"Game Winning Goals: {x.game_winning_goals}\n" \
-                            f"Plus/Minus:         {x.plus_minus}```"
-
-    elif year_start > 1958:
-        embed.description = "```\n" \
-                            f"Games Played:       {x.games}\n" \
-                            f"Goals:              {x.goals}\n" \
-                            f"Assists:            {x.assists}\n" \
-                            f"Points:             {x.points}\n" \
-                            f"PIM:                {x.pim}\n" \
-                            f"Shots:              {x.shots}\n" \
-                            f"Shot Pct:           {round(x.get_shooting_percentage(), 1)}\n" \
-                            f"Power Play Goals:   {x.power_play_goals}\n" \
-                            f"Power Play Points:  {x.power_play_points}\n" \
-                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
-                            f"Shorthanded Points: {x.shorthanded_points}\n" \
-                            f"Overtime Goals:     {x.overtime_goals}\n" \
-                            f"Game Winning Goals: {x.game_winning_goals}\n" \
-                            f"Plus/Minus:         {x.plus_minus}```"
-
-    elif year_start > 1932:
-        embed.description = "```\n" \
-                            f"Games Played:       {x.games}\n" \
-                            f"Goals:              {x.goals}\n" \
-                            f"Assists:            {x.assists}\n" \
-                            f"Points:             {x.points}\n" \
-                            f"PIM:                {x.pim}\n" \
-                            f"Power Play Goals:   {x.power_play_goals}\n" \
-                            f"Power Play Points:  {x.power_play_points}\n" \
-                            f"Shorthanded Goals:  {x.shorthanded_goals}\n" \
-                            f"Shorthanded Points: {x.shorthanded_points}\n" \
-                            f"Overtime Goals:     {x.overtime_goals}\n" \
-                            f"Game Winning Goals: {x.game_winning_goals}```"
-
-    else:
-        embed.description = "```\n" \
-                            + f"Games Played:       {x.games}\n" \
-                            + f"Goals:              {x.goals}\n" \
-                            + f"Assists:            {x.assists}\n" \
-                            + f"Points:             {x.points}\n" \
-                            + f"PIM:                {x.pim}\n" \
-                            + f"Overtime Goals:     {x.overtime_goals}\n" \
-                            + f"Game Winning Goals: {x.game_winning_goals}```"
-
-    if fetch_type == "career":
-        embed.description = "Career Stats\n" + embed.description
-    elif fetch_type == "season":
-        embed.description = f"{year_start}-{year_end} Stats\n" + embed.description
-
-    return embed
 
 
 def get_nhl_draft_url(year, draft_round, team_id):
@@ -401,6 +278,59 @@ class EmbedPages(menus.ListPageSource):
         return entries
 
 
+async def send_season_stats(ctx, name, season_string, player_id, extended, season_start_year, season_end_year):
+    player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
+                 f"/stats?stats=yearByYear"
+    seasons = []
+
+    embed_list = []
+
+    async with aiohttp.ClientSession() as cs:  # pulls data from the website
+        async with cs.get(player_url) as r:
+            res = await r.json()
+            for items in res['stats']:
+                for season in items['splits']:
+                    embed = discord.Embed(
+                        title=f"{name} {season_start_year}-{season_end_year} season"
+                    )
+                    seasons.append(season['season'])
+                    if season['season'] == season_string:
+                        embed_string = "```\n"
+                        found = True
+                        embed_string += f"{season['team']['name']}\n{season['league']['name']}\n"
+                        stats = season['stat']
+                        for key, value in stats.items():
+                            if extended:
+                                key += ":"
+                                if isinstance(value, float):
+                                    value = round(value, 2)
+                                embed_string += f"{key:<30}{value}\n"
+                            else:
+                                if key not in blacklisted_stat_types:
+                                    key += ":"
+                                    if isinstance(value, float):
+                                        value = round(value, 2)
+                                    embed_string += f"{key:<30}{value}\n"
+
+                        embed_string += "```"
+                        embed.description = embed_string
+                        embed_list.append(embed)
+
+    if not found:
+        print(seasons)
+        first_season = seasons[0][:4] + "-" + seasons[0][4:]
+        last_season = seasons[len(seasons) - 1][:4] + "-" + seasons[len(seasons) - 1][4:]
+        await ctx.send(f'That season isn\'t in the API, try a season between {first_season} and '
+                       f'{last_season}')
+    else:
+        if len(embed_list) > 1:
+            pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+            await pages.start(ctx)
+            return
+        else:
+            await ctx.send(embed=embed_list[0])
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -457,101 +387,76 @@ class NHLBot(commands.Cog):
         pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
         await pages.start(ctx)
 
-    @nhl.command()
-    async def player(self, ctx, name, team, season_start_year: int, season_end_year: int, fetch_type: str):
-        type_list = ["career", "season"]
-        if fetch_type not in type_list:
-            await ctx.send("Type must be either \"career\" or \"season\"")
+    @nhl.group()
+    async def player(self, ctx):
+        pass
+
+    @player.group()
+    async def id(self, ctx):
+        pass
+
+    @id.command(name="season")
+    async def _season(self, ctx, player_id, name, season_start_year, season_end_year, extended=None):
+        season_string = str(season_start_year) + str(season_end_year)
+
+        await send_season_stats(ctx, name, season_string, player_id, extended, season_start_year, season_end_year)
+
+    @player.command()
+    async def season(self, ctx, name, season_start_year: int, season_end_year: int, extended=None):
 
         name = unidecode.unidecode(name)  # decodes name for special symbols
+        name_string = name
+        player_id = None
 
-        player = await self.bot.player_collection.find_one({'fullName': name})
-        season = str(season_start_year) + str(season_end_year)
-
-        if player is None:  # if player is not already in the database
-            team_id = getTeamID(team, season_start_year)  # get the team ID
-            season = str(season_start_year) + str(season_end_year)  # put together a valid seasons string
-            team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.roster&season={season}"
-            # build the api url call
-            print(team_url)  # print it for debugging purposes
-            player_id = None  # set player id to none for a check later
-
+        name_list = name.split()
+        name_list.insert(0, name)
+        player_list = []
+        for name in name_list:
+            url = f"https://suggest.svc.nhl.com/svc/suggest/v1/minplayers/{name}"
             async with aiohttp.ClientSession() as cs:  # gets the data from the website
-                async with cs.get(team_url) as r:
+                async with cs.get(url) as r:
                     res = await r.json()
-                    print(res)  # prints the dict for debugging purposes
-                    if 'teams' in res:
-                        for items in res['teams']:
-                            for items2 in items['roster']['roster']:
-                                if name == unidecode.unidecode(
-                                        items2['person']['fullName']):  # decodes name from database and checks it
-                                    player_id = items2['person']['id']
-                                    player_name = unidecode.unidecode(items2['person']['fullName'])
-                                    position = items2['position']['code']
-                                    break
-                    else:  # if it was an invalid url it will return this string
-                        await ctx.send(f'I couldn\'t find {team} for the {season_start_year}-{season_end_year} season! '
-                                       f'Sorry, blame the NHL. '
-                                       f'Or blame yourself if it didn\'t exist then. Your fault.')
-                        return
+                    print(res)
+                    if not res['suggestions']:
+                        pass
+                    elif len(res['suggestions']) == 1:
+                        for player in res['suggestions']:
+                            values = player.split("|")
+                            player_id = values[0]
+                    else:
+                        for player in res['suggestions']:
+                            values = player.split("|")
+                            name_id_list = values[-1].split('-')
+                            lowercase_list = []
+                            for name in name_list:
+                                lowercase_list.append(name.lower())
+                            if lowercase_list[1] == name_id_list[0] and lowercase_list[2] == name_id_list[1]:
+                                player_id = values[0]
+                                if values not in player_list:
+                                    player_list.append(values)
 
-            if player_id is None:  # if it couldn't find the player on that roster, it returns this string
-                await ctx.send("Player not found, try again.")
-                return
+        if len(player_list) > 1:
+            embed = discord.Embed(
+                title="Sorry about this!",
+                description="```\n"
+                            "There are at least two people with that exact name, so here they are with their IDs, "
+                            "if you see the person you are looking for use\n"
+                            "\"howler nhl player id season <id> <name> <season_start_year> <season_end_year>\"```"
+            )
 
-            else:  # double checks to make sure the player was not in the database and does nothing if it is
-                if await self.bot.player_collection.count_documents({"_id": player_id}, limit=1) != 0:
-                    pass
-                else:  # adds the player to the database
-                    player_dict = {"_id": player_id, 'fullName': player_name, 'position': position}
-                    await self.bot.player_collection.insert_one(player_dict)
+            for player in player_list:
+                embed.add_field(name=f"{player[2]} {player[1]} {player[10]}", value=f"ID: {player[0]}")
 
-        else:  # if the player was in the database it sets these values
-            player_id = player['_id']
-            position = player['position']
-
-        player_url = ""
-
-        if fetch_type == "season":  # builds the url for a player for one season
-            player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
-                         f"/stats?stats=statsSingleSeason&season={season}"
-        elif fetch_type == "career":  # builds the url for a player for their career
-            player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}/stats?stats=yearByYear"
-
-        if position == "G":  # creates a class for the player
-            x = Goalie(name, position, team)
-        else:
-            x = Skater(name, position, team)
-
-        async with aiohttp.ClientSession() as cs:  # pulls data from the website
-            async with cs.get(player_url) as r:
-                res = await r.json()
-                for items in res['stats']:
-                    for items2 in items['splits']:
-                        year = int(str(items2['season'])[
-                                   :4])  # gets the first year of the season so that it can check what values are valid
-                        if fetch_type == "career":
-                            if items2['league']['name'] == "NHL" \
-                                    or items2['league']['name'] == "National Hockey League":  # only checks stats for
-                                # NHL seasons
-                                if position == "G":
-                                    x = set_goalie_stats(x, items2, year)
-                                else:
-
-                                    x = set_skater_stats(x, items2, year)
-
-                        elif fetch_type == "season":  # just checks that year stats
-                            if position == "G":
-                                x = set_goalie_stats(x, items2, year)
-                            else:
-                                x = set_skater_stats(x, items2, year)
-
-        if position == "G":  # builds goalie embed
-            embed = set_goalie_embed(x, season_start_year, season_end_year, fetch_type)
             await ctx.send(embed=embed)
-        else:  # builds skater embed
-            embed = set_skater_embed(x, season_start_year, season_end_year, fetch_type)
-            await ctx.send(embed=embed)
+            return
+        elif player_id is None:
+            await ctx.send("Player not found, try again.")
+            return
+
+        season_string = str(season_start_year) + str(season_end_year)
+
+        await send_season_stats(ctx, name_string,
+                                season_string, player_id, extended, season_start_year, season_end_year)
 
     @nhl.group()
     async def team(self, ctx):
