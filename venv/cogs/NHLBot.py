@@ -10,6 +10,11 @@ blacklisted_stat_types = ['timeOnIce', 'powerPlayTimeOnIce', 'evenTimeOnIce', 's
                           'shortHandedShots', 'evenShots', 'powerPlayShots', 'powerPlaySavePercentage',
                           'shortHandedSavePercentage', 'evenStrengthSavePercentage']
 
+blacklisted_draft_types = ['id', 'ageInDays', 'ageInDaysForYear', 'birthDate', 'birthPlace', 'csPlayerId', 'draftDate',
+                           'draftMasterId', 'draftYear', 'draftedByTeamId', 'playerId', 'firstName', 'height',
+                           'lastName', 'removedOutright', 'removedOutrightWhy', 'shootsCatches', 'supplementalDraft',
+                           'weight', 'pickInRound']
+
 
 # Period class to represent a period in a hockey game
 class Period:
@@ -278,7 +283,9 @@ class EmbedPages(menus.ListPageSource):
         return entries
 
 
-async def send_season_stats(ctx, name, season_string, player_id, extended, season_start_year, season_end_year):
+async def send_season_stats(ctx, name, player_id, extended, season_start_year, season_end_year):
+    season_string = str(season_start_year) + str(season_end_year)
+
     player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
                  f"/stats?stats=yearByYear"
     seasons = []
@@ -331,19 +338,128 @@ async def send_season_stats(ctx, name, season_string, player_id, extended, seaso
             await ctx.send(embed=embed_list[0])
 
 
+async def send_seasons_stats(ctx, name, player_id, extended):
+    player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
+                 f"/stats?stats=yearByYear"
+
+    embed_list = []
+
+    async with aiohttp.ClientSession() as cs:  # pulls data from the website
+        async with cs.get(player_url) as r:
+            res = await r.json()
+            print(res)
+            for items in res['stats']:
+                for season in items['splits']:
+                    embed = discord.Embed(
+                        title=f"{name} {season['season'][:4]}-{season['season'][4:]} season"
+                    )
+                    embed_string = "```\n"
+                    embed_string += f"{season['team']['name']}\n{season['league']['name']}\n"
+                    stats = season['stat']
+                    for key, value in stats.items():
+                        if extended:
+                            key += ":"
+                            if isinstance(value, float):
+                                value = round(value, 2)
+                            embed_string += f"{key:<30}{value}\n"
+                        else:
+                            if key not in blacklisted_stat_types:
+                                key += ":"
+                                if isinstance(value, float):
+                                    value = round(value, 2)
+                                embed_string += f"{key:<30}{value}\n"
+
+                    embed_string += "```"
+                    embed.description = embed_string
+                    embed_list.append(embed)
+
+    pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+    await pages.start(ctx)
+    return
+
+
+async def get_player_id(ctx, name):
+    name = unidecode.unidecode(name)  # decodes name for special symbols
+    player_id = None
+
+    name_list = name.split()
+    name_list.insert(0, name)
+    player_list = []
+    for name in name_list:
+        url = f"https://suggest.svc.nhl.com/svc/suggest/v1/minplayers/{name}"
+        async with aiohttp.ClientSession() as cs:  # gets the data from the website
+            async with cs.get(url) as r:
+                res = await r.json()
+                print(res)
+                if not res['suggestions']:
+                    pass
+                elif len(res['suggestions']) == 1:
+                    player = res['suggestions'][0]
+                    values = player.split("|")
+                    player_id = values[0]
+                    break
+                else:
+                    for player in res['suggestions']:
+                        values = player.split("|")
+                        name_id_list = values[-1].split('-')
+                        lowercase_list = []
+                        for name in name_list:
+                            lowercase_list.append(name.lower())
+                        if lowercase_list[1] == name_id_list[0] and lowercase_list[2] == name_id_list[1]:
+                            player_id = values[0]
+                            if values not in player_list:
+                                player_list.append(values)
+
+    if len(player_list) > 1:
+        embed = discord.Embed(
+            title="Sorry about this!",
+            description="```\n"
+                        "There are at least two people with that exact name, so here they are with their IDs, "
+                        "if you see the person you are looking for use\n"
+                        "\"howler nhl player id <command_name> <id> <name> <season_start_year> <season_end_year>\"```"
+        )
+
+        for player in player_list:
+            embed.add_field(name=f"{player[2]} {player[1]} {player[10]}", value=f"ID: {player[0]}")
+
+        await ctx.send(embed=embed)
+        return 0
+    elif player_id is None:
+        await ctx.send("Player not found, try again.")
+        return 0
+
+    return player_id
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.player_collection = bot.player_collection
 
-    @commands.group()  # invoke_without_command=True)
+    # COMMAND GROUPS ###################################################################################################
+
+    @commands.group()
     async def nhl(self, ctx):
         pass
+
+    @nhl.group()
+    async def player(self, ctx):
+        pass
+
+    @player.group()
+    async def id(self, ctx):
+        pass
+
+    @nhl.group()
+    async def team(self, ctx):
+        pass
+
+    # DRAFT COMMANDS ###################################################################################################
 
     @nhl.command()
     async def draft(self, ctx, year: int, draft_round=0, team=None):
 
-        player_list = []
+        embed_list = []
 
         team_id = getTeamID(team, year)
 
@@ -355,112 +471,59 @@ class NHLBot(commands.Cog):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as r:
                 res = await r.json()  # returns dict
-                print(res)
                 for player in res['data']:
-                    x = Draftee(player['playerName'],
-                                player['position'],
-                                player['triCode'],
-                                player['roundNumber'],
-                                player['overallPickNumber'],
-                                player['teamPickHistory'],
-                                f"{player['amateurClubName']} {player['amateurLeague']}")
-                    player_list.append(x)
+                    embed_string = "```\n"
+                    for key, value in player.items():
+                        if key in blacklisted_draft_types:
+                            continue
+                        else:
+                            embed = discord.Embed(
+                                title=f"{year} draft"
+                            )
+                            key += ":"
+                            embed_string += f"{key:<20}{value}\n"
 
-        embed_list = []
-
-        for player in player_list:
-            embed = discord.Embed(
-                title=f"{year} Draft: Pick {player.pick}",
-                description="```"
-                            f"Player:       {player.name}\n"
-                            f"Pick:         {player.pick}\n"
-                            f"Round:        {player.draft_round}\n"
-                            f"Position:     {player.position}\n"
-                            f"Drafted From: {player.drafted_from}\n"
-                            f"Drafted By:   {player.team}\n"
-                            f"Pick History: {player.pick_history}\n"
-                            f"```"
-            )
-
-            embed_list.append(embed)
+                    embed_string += "```"
+                    embed.description = embed_string
+                    embed_list.append(embed)
 
         pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
         await pages.start(ctx)
 
-    @nhl.group()
-    async def player(self, ctx):
-        pass
-
-    @player.group()
-    async def id(self, ctx):
-        pass
+    # ID COMMANDS ######################################################################################################
 
     @id.command(name="season")
     async def _season(self, ctx, player_id, name, season_start_year, season_end_year, extended=None):
-        season_string = str(season_start_year) + str(season_end_year)
+        await send_season_stats(ctx, name, player_id, extended, season_start_year, season_end_year)
 
-        await send_season_stats(ctx, name, season_string, player_id, extended, season_start_year, season_end_year)
+    @id.command()
+    async def _seasons(self, ctx, player_id, name, extended=None):
+        await send_seasons_stats(ctx, name, player_id, extended)
+
+    # PLAYER COMMANDS ##################################################################################################
 
     @player.command()
     async def season(self, ctx, name, season_start_year: int, season_end_year: int, extended=None):
 
-        name = unidecode.unidecode(name)  # decodes name for special symbols
-        name_string = name
-        player_id = None
-
-        name_list = name.split()
-        name_list.insert(0, name)
-        player_list = []
-        for name in name_list:
-            url = f"https://suggest.svc.nhl.com/svc/suggest/v1/minplayers/{name}"
-            async with aiohttp.ClientSession() as cs:  # gets the data from the website
-                async with cs.get(url) as r:
-                    res = await r.json()
-                    print(res)
-                    if not res['suggestions']:
-                        pass
-                    elif len(res['suggestions']) == 1:
-                        for player in res['suggestions']:
-                            values = player.split("|")
-                            player_id = values[0]
-                    else:
-                        for player in res['suggestions']:
-                            values = player.split("|")
-                            name_id_list = values[-1].split('-')
-                            lowercase_list = []
-                            for name in name_list:
-                                lowercase_list.append(name.lower())
-                            if lowercase_list[1] == name_id_list[0] and lowercase_list[2] == name_id_list[1]:
-                                player_id = values[0]
-                                if values not in player_list:
-                                    player_list.append(values)
-
-        if len(player_list) > 1:
-            embed = discord.Embed(
-                title="Sorry about this!",
-                description="```\n"
-                            "There are at least two people with that exact name, so here they are with their IDs, "
-                            "if you see the person you are looking for use\n"
-                            "\"howler nhl player id season <id> <name> <season_start_year> <season_end_year>\"```"
-            )
-
-            for player in player_list:
-                embed.add_field(name=f"{player[2]} {player[1]} {player[10]}", value=f"ID: {player[0]}")
-
-            await ctx.send(embed=embed)
-            return
-        elif player_id is None:
-            await ctx.send("Player not found, try again.")
+        player_id = await get_player_id(ctx, name)
+        if player_id == 0:
             return
 
-        season_string = str(season_start_year) + str(season_end_year)
+        await send_season_stats(ctx, name, player_id, extended, season_start_year, season_end_year)
 
-        await send_season_stats(ctx, name_string,
-                                season_string, player_id, extended, season_start_year, season_end_year)
+    @player.command()
+    async def seasons(self, ctx, name, extended=None):
+        player_id = await get_player_id(ctx, name)
+        if player_id == 0:
+            return
 
-    @nhl.group()
-    async def team(self, ctx):
+        await send_seasons_stats(ctx, name, player_id, extended)
+
+    @player.command()
+    async def career(self, ctx, name, extended=None):
         pass
+
+    # TEAM COMMANDS ####################################################################################################
 
     @team.command()
     async def next(self, ctx, team):

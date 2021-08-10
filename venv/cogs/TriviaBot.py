@@ -25,7 +25,7 @@ async def give_points(name_list, user_collection, correct_answer):
             name_list.append(name)
             ans_total += 1
         elif answer != 0:
-            ans_total = 0
+            ans_total += 1
         await user_collection.update_one({"_id": str(user_id)}, {"$set": {'answer': 0}})
 
     return {"total": ans_total, "correct": ans_correctly}
@@ -212,7 +212,7 @@ class TriviaBot(commands.Cog):
         for (user, score, rank) in zip(user_names, user_scores, ranks):
             if rank > 10:
                 break
-            leaderboard_string += f"{rank:<3}{user:<20} {score}\n"
+            leaderboard_string += f"{rank:<3}{user:<30} {score}\n"
 
         leaderboard_string += "```"
         embed.description = leaderboard_string

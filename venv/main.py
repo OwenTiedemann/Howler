@@ -73,10 +73,8 @@ async def on_command_error(ctx, error):
         await ctx.send("You do not have permission to use this command!")
     elif isinstance(error, commands.CommandInvokeError):  # if the command has an error in the code
         await ctx.send(
-            f"{error}\nIf this is a \"KeyError:\" it's probably because the season you requested doesn't have the data "
-            f"more recent seasons do, but I can probably write a specific error message for it. "
-            f"DM Roman the command and the error message."
-            f" If it isn't that error, DM Roman the info anyway.")
+            f"{error}\n"
+            f"DM Roman the command and the error message.")
     elif isinstance(error, commands.CommandNotFound):  # if a command is not found and is in a valid channel
         if ctx.channel.name in whitelisted_channels or ctx.channel.category.id in whitelisted_categories:
             await ctx.send("That command doesn't exist, use howler help to find the correct usage!")
