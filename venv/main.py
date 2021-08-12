@@ -13,7 +13,7 @@ bot.player_collection = player_database['Players']
 bot.trivia_database = database_client['database']
 bot.image_database = database_client['images']
 
-initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot']
+initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot', 'jishaku']
 
 whitelisted_channels = ['bot-spam', 'trivia', 'trivia-discussion', 'trivia-setup', 'test-commands', 'game-thread']
 whitelisted_categories = [432008796106391565]
@@ -80,6 +80,8 @@ async def on_command_error(ctx, error):
             await ctx.send("That command doesn't exist, use howler help to find the correct usage!")
         else:
             pass
+    elif isinstance(error, commands.TooManyArguments):
+        await ctx.send(error)
     else:  # anything not currently covered, new errors will be added when discovered
         await ctx.send(
             f"{error}\nIf you're getting this message, I don't have a check for this specific error, so congrats you "

@@ -2,10 +2,16 @@ import discord
 from discord.ext import commands
 
 
-async def add_user(user, user_collection):
-    if await user_collection.count_documents({"_id": str(user.id)}, limit=1) != 0:
+async def add_user(member, user_collection):
+    if await user_collection.count_documents({"_id": str(member.id)}, limit=1) != 0:
         return
-    user_dict = {"_id": str(user.id), 'answer': 0, 'number_correct': 0, 'display_name': user.display_name}
+    name = member.display_name
+    if len(member.display_name) > 21 and len(member.name) <= 21:
+        name = member.name
+    elif len(member.display_name) > 21 and len(member.name) > 21:
+        name = member.display_name[0:21]
+
+    user_dict = {"_id": str(member.id), 'answer': 0, 'number_correct': 0, 'display_name': name}
     await user_collection.insert_one(user_dict)
 
 
@@ -212,7 +218,7 @@ class TriviaBot(commands.Cog):
         for (user, score, rank) in zip(user_names, user_scores, ranks):
             if rank > 10:
                 break
-            leaderboard_string += f"{rank:<3}{user:<30} {score}\n"
+            leaderboard_string += f"{rank:<3}{user:<23} {score}\n"
 
         leaderboard_string += "```"
         embed.description = leaderboard_string
