@@ -252,29 +252,6 @@ def getTeamID(team: str, year: int):
         return 55
 
 
-def set_skater_stats(x, stats, year):
-    if year > 1996:
-        x.hits += stats['stat']['hits']
-    if year > 1958:
-        x.plus_minus += stats['stat']['plusMinus']
-        x.shots += stats['stat']['shots']
-    if year > 1932:
-        x.power_play_goals += stats['stat']['powerPlayGoals']
-        x.power_play_points += stats['stat']['powerPlayPoints']
-        x.shorthanded_goals += stats['stat']['shortHandedGoals']
-        x.shorthanded_points += stats['stat']['shortHandedPoints']
-
-    x.goals += stats['stat']['goals']
-    x.assists += stats['stat']['assists']
-    x.pim += stats['stat']['pim']
-    x.games += stats['stat']['games']
-    x.game_winning_goals += stats['stat']['gameWinningGoals']
-    x.overtime_goals += stats['stat']['overTimeGoals']
-    x.points += stats['stat']['points']
-
-    return x
-
-
 class EmbedPages(menus.ListPageSource):
     def __init__(self, data):
         super().__init__(data, per_page=1)
@@ -304,20 +281,30 @@ async def send_season_stats(ctx, name, player_id, extended, season_start_year, s
                     if season['season'] == season_string:
                         embed_string = "```\n"
                         found = True
-                        embed_string += f"{season['team']['name']}\n{season['league']['name']}\n"
+                        embed_string += f"{season['team']['name']}\n{season['league']['name']}\n\n"
                         stats = season['stat']
+                        max_key_length = 21
+                        for key, value in stats.items():
+                            if extended:
+                                if len(key) > max_key_length:
+                                    max_key_length = len(key)
+                            else:
+                                if key not in blacklisted_stat_types:
+                                    if len(key) > max_key_length:
+                                        max_key_length = len(key)
+
                         for key, value in stats.items():
                             if extended:
                                 key += ":"
                                 if isinstance(value, float):
                                     value = round(value, 2)
-                                embed_string += f"{key:<30}{value}\n"
+                                embed_string += f"{key:<{max_key_length + 2}}{value}\n"
                             else:
                                 if key not in blacklisted_stat_types:
                                     key += ":"
                                     if isinstance(value, float):
                                         value = round(value, 2)
-                                    embed_string += f"{key:<30}{value}\n"
+                                    embed_string += f"{key:<{max_key_length + 2}}{value}\n"
 
                         embed_string += "```"
                         embed.description = embed_string
@@ -354,20 +341,29 @@ async def send_seasons_stats(ctx, name, player_id, extended):
                         title=f"{name} {season['season'][:4]}-{season['season'][4:]} season"
                     )
                     embed_string = "```\n"
-                    embed_string += f"{season['team']['name']}\n{season['league']['name']}\n"
+                    embed_string += f"{season['team']['name']}\n{season['league']['name']}\n\n"
                     stats = season['stat']
+                    max_key_length = 21
+                    for key, value in stats.items():
+                        if extended:
+                            if len(key) > max_key_length:
+                                max_key_length = len(key)
+                        else:
+                            if key not in blacklisted_stat_types:
+                                if len(key) > max_key_length:
+                                    max_key_length = len(key)
                     for key, value in stats.items():
                         if extended:
                             key += ":"
                             if isinstance(value, float):
                                 value = round(value, 2)
-                            embed_string += f"{key:<30}{value}\n"
+                            embed_string += f"{key:<{max_key_length + 2}}{value}\n"
                         else:
                             if key not in blacklisted_stat_types:
                                 key += ":"
                                 if isinstance(value, float):
                                     value = round(value, 2)
-                                embed_string += f"{key:<30}{value}\n"
+                                embed_string += f"{key:<{max_key_length + 2}}{value}\n"
 
                     embed_string += "```"
                     embed.description = embed_string
@@ -454,6 +450,48 @@ class NHLBot(commands.Cog):
     async def team(self, ctx):
         pass
 
+    # NHL COMMANDS #####################################################################################################
+
+    @nhl.command()
+    async def standings(self, ctx, season_start_year=None, season_end_year=None):
+
+        embed_list = []
+
+        if season_start_year is None and season_end_year is None:
+            url = "https://statsapi.web.nhl.com/api/v1/standings"
+        elif season_start_year is None or season_end_year is None:
+            await ctx.send("Missing a required argument")
+            return
+        else:
+            url = f"https://statsapi.web.nhl.com/api/v1/standings?season={season_start_year}{season_end_year}"
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as r:
+                res = await r.json()  # returns dict
+                print(res)
+                for record in res['records']:
+                    embed = discord.Embed(
+                        title=f"{record['division']['name']} division standings"
+                    )
+                    embed_string = "```\n"
+                    for team in record['teamRecords']:
+                        records = team['leagueRecord']
+                        if 'ties' in records:
+                            team_record = f"{records['wins']}-{records['losses']}-{records['ties']}-{records['ot']}"
+                            embed_string += f"{team['team']['name']:<21} " \
+                                            f"{team_record:<12}{team['points']}\n"
+                        else:
+                            team_record = f"{records['wins']}-{records['losses']}-{records['ot']}"
+                            embed_string += f"{team['team']['name']:<21} " \
+                                            f"{team_record:<10}{team['points']}\n"
+
+                    embed_string += "```"
+                    embed.description = embed_string
+                    embed_list.append(embed)
+
+        pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+        await pages.start(ctx)
+
     # DRAFT COMMANDS ###################################################################################################
 
     @nhl.command()
@@ -496,7 +534,7 @@ class NHLBot(commands.Cog):
     async def _season(self, ctx, player_id, name, season_start_year, season_end_year, extended=None):
         await send_season_stats(ctx, name, player_id, extended, season_start_year, season_end_year)
 
-    @id.command()
+    @id.command(name="seasons")
     async def _seasons(self, ctx, player_id, name, extended=None):
         await send_seasons_stats(ctx, name, player_id, extended)
 
@@ -524,6 +562,62 @@ class NHLBot(commands.Cog):
         pass
 
     # TEAM COMMANDS ####################################################################################################
+
+    @team.command()
+    async def stats(self, ctx, team, season_start_year, season_end_year, extended=None):
+        season = str(season_start_year) + str(season_end_year)
+
+        team_id = getTeamID(team, int(season_start_year))
+
+        team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.stats&season={season}"
+        embed_list = []
+
+        blacklisted_team_stat_types = ['evGGARatio', 'powerPlayOpportunities', 'powerPlayGoals',
+                                       'powerPlayGoalsAgainst', 'powerPlayOpportunities', 'penaltyKillOpportunities',
+                                       'shotsPerGame', 'shotsAllowed', 'winScoreFirst', 'winOppScoreFirst',
+                                       'winLeadFirstPer', 'winLeadSecondPer', 'winOutshootOpp', 'winOutshotByOpp',
+                                       'faceOffsTaken', 'faceOffsWon', 'faceOffsLost', 'faceOffWinPercentage',
+                                       'savePctg', 'savePctRank', 'shootingPctg', 'shootingPctRank']
+
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(team_url) as r:
+                res = await r.json()
+                print(res)
+                team = res['teams'][0]
+                team_stats = team['teamStats'][0]
+                for split in team_stats['splits']:
+                    embed = discord.Embed(
+                        title=f"{team['name']} Stats and Rankings {season_start_year}-{season_end_year}"
+                    )
+                    embed_string = "```\n"
+                    max_key_length = 21
+                    for key, value in split['stat'].items():
+                        if extended:
+                            if len(key) > max_key_length:
+                                max_key_length = len(key)
+                        else:
+                            if key not in blacklisted_team_stat_types:
+                                if len(key) > max_key_length:
+                                    max_key_length = len(key)
+                    for key, value in split['stat'].items():
+                        if extended:
+                            key += ":"
+                            if isinstance(value, float):
+                                value = round(value, 2)
+                            embed_string += f"{key:<{max_key_length + 2}}{value}\n"
+                        else:
+                            if key not in blacklisted_team_stat_types:
+                                key += ":"
+                                if isinstance(value, float):
+                                    value = round(value, 2)
+                                embed_string += f"{key:<{max_key_length + 2}}{value}\n"
+
+                    embed_string += "```"
+                    embed.description = embed_string
+                    embed_list.append(embed)
+
+        pages = menus.MenuPages(source=EmbedPages(embed_list), clear_reactions_after=True)
+        await pages.start(ctx)
 
     @team.command()
     async def next(self, ctx, team):
