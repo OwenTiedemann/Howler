@@ -8,12 +8,19 @@ blacklisted_stat_types = ['timeOnIce', 'powerPlayTimeOnIce', 'evenTimeOnIce', 's
                           'timeOnIcePerGame', 'evenTimeOnIcePerGame', 'shortHandedTimeOnIcePerGame',
                           'powerPlayTimeOnIcePerGame', 'powerPlaySaves', 'shortHandedSaves', 'evenSaves',
                           'shortHandedShots', 'evenShots', 'powerPlayShots', 'powerPlaySavePercentage',
-                          'shortHandedSavePercentage', 'evenStrengthSavePercentage']
+                          'shortHandedSavePercentage', 'evenStrengthSavePercentage', 'penaltyMinutes']
 
 blacklisted_draft_types = ['id', 'ageInDays', 'ageInDaysForYear', 'birthDate', 'birthPlace', 'csPlayerId', 'draftDate',
                            'draftMasterId', 'draftYear', 'draftedByTeamId', 'playerId', 'firstName', 'height',
                            'lastName', 'removedOutright', 'removedOutrightWhy', 'shootsCatches', 'supplementalDraft',
                            'weight', 'pickInRound']
+
+blacklisted_team_stat_types = ['evGGARatio', 'powerPlayOpportunities', 'powerPlayGoals',
+                               'powerPlayGoalsAgainst', 'powerPlayOpportunities', 'penaltyKillOpportunities',
+                               'shotsPerGame', 'shotsAllowed', 'winScoreFirst', 'winOppScoreFirst',
+                               'winLeadFirstPer', 'winLeadSecondPer', 'winOutshootOpp', 'winOutshotByOpp',
+                               'faceOffsTaken', 'faceOffsWon', 'faceOffsLost', 'faceOffWinPercentage',
+                               'savePctg', 'savePctRank', 'shootingPctg', 'shootingPctRank']
 
 
 # Period class to represent a period in a hockey game
@@ -427,6 +434,90 @@ async def get_player_id(ctx, name):
     return player_id
 
 
+async def send_career_stats(ctx, name, player_id, league, extended):
+    if league == "NHL":
+        league = "National Hockey League"
+
+    player_url = f"https://statsapi.web.nhl.com/api/v1/people/{player_id}" \
+                 f"/stats?stats=yearByYear"
+
+    async with aiohttp.ClientSession() as cs:  # pulls data from the website
+        async with cs.get(player_url) as r:
+            res = await r.json()
+            print(res)
+            for items in res['stats']:
+                career_stats_dict = {}
+                for season in items['splits']:
+                    if season['league']['name'] == league:
+                        stats = season['stat']
+                        print(f"{season['season']} GAMES: {season['stat']['games']}")
+                        for key, value in stats.items():
+                            if key in career_stats_dict:
+                                continue
+                            else:
+                                career_stats_dict[key] = 0
+
+                        for key, value in stats.items():
+                            if 'OnIce' in key:
+                                minutes_played_add, seconds_add = value.split(':')
+                                minutes_played = float(minutes_played_add) + round((float(seconds_add) / 60), 3)
+                                career_stats_dict[key] += minutes_played
+                            else:
+                                career_stats_dict[key] += int(value)
+
+    blacklisted_career_types = ['powerPlayTimeOnIce', 'faceOffPct', '']
+
+    if 'faceOffPct' in career_stats_dict:
+        career_stats_dict.pop('faceOffPct')
+
+    if 'shotPct' in career_stats_dict:
+        career_stats_dict['shotPct'] = career_stats_dict['goals'] / career_stats_dict['shots'] * 100
+
+    if 'savePercentage' in career_stats_dict:
+        if 'powerPlaySavePercentage' in career_stats_dict:
+            career_stats_dict.pop('powerPlaySavePercentage')
+            career_stats_dict.pop('shortHandedSavePercentage')
+            career_stats_dict.pop('evenStrengthSavePercentage')
+        career_stats_dict['savePercentage'] = career_stats_dict['saves'] / career_stats_dict['shotsAgainst']
+
+    if 'goalAgainstAverage' in career_stats_dict:
+        career_stats_dict['goalAgainstAverage'] = (career_stats_dict['goalsAgainst'] * 60) / career_stats_dict['timeOnIce']
+
+    embed = discord.Embed(
+        title=f"{name} Career Stats {league}"
+    )
+
+    embed_string = "```\n"
+    max_key_length = 21
+    for key, value in career_stats_dict.items():
+        if extended:
+            if len(key) > max_key_length:
+                max_key_length = len(key)
+        else:
+            if key not in blacklisted_stat_types:
+                if len(key) > max_key_length:
+                    max_key_length = len(key)
+    for key, value in career_stats_dict.items():
+        if extended:
+            key += ":"
+            if isinstance(value, float):
+                value = round(value, 3)
+            embed_string += f"{key:<{max_key_length + 2}}{value}\n"
+        else:
+            if key not in blacklisted_stat_types:
+                key += ":"
+                if isinstance(value, float):
+                    value = round(value, 3)
+                embed_string += f"{key:<{max_key_length + 2}}{value}\n"
+
+    embed_string += "```"
+    embed.description = embed_string
+
+    await ctx.send(embed=embed)
+
+    return
+
+
 class NHLBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -538,6 +629,10 @@ class NHLBot(commands.Cog):
     async def _seasons(self, ctx, player_id, name, extended=None):
         await send_seasons_stats(ctx, name, player_id, extended)
 
+    @id.command(name="career")
+    async def _career(self, ctx, player_id, name, league, extended=None):
+        await send_career_stats(ctx, name, player_id, league, extended)
+
     # PLAYER COMMANDS ##################################################################################################
 
     @player.command()
@@ -558,8 +653,12 @@ class NHLBot(commands.Cog):
         await send_seasons_stats(ctx, name, player_id, extended)
 
     @player.command()
-    async def career(self, ctx, name, extended=None):
-        pass
+    async def career(self, ctx, name, league, extended=None):
+        player_id = await get_player_id(ctx, name)
+        if player_id == 0:
+            return
+        
+        await send_career_stats(ctx, name, player_id, league, extended)
 
     # TEAM COMMANDS ####################################################################################################
 
@@ -571,13 +670,6 @@ class NHLBot(commands.Cog):
 
         team_url = f"https://statsapi.web.nhl.com/api/v1/teams/{team_id}?expand=team.stats&season={season}"
         embed_list = []
-
-        blacklisted_team_stat_types = ['evGGARatio', 'powerPlayOpportunities', 'powerPlayGoals',
-                                       'powerPlayGoalsAgainst', 'powerPlayOpportunities', 'penaltyKillOpportunities',
-                                       'shotsPerGame', 'shotsAllowed', 'winScoreFirst', 'winOppScoreFirst',
-                                       'winLeadFirstPer', 'winLeadSecondPer', 'winOutshootOpp', 'winOutshotByOpp',
-                                       'faceOffsTaken', 'faceOffsWon', 'faceOffsLost', 'faceOffWinPercentage',
-                                       'savePctg', 'savePctRank', 'shootingPctg', 'shootingPctRank']
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
@@ -716,11 +808,13 @@ class NHLBot(commands.Cog):
         await ctx.send(embed=embed)
 
     @team.command()
-    @commands.cooldown(1, 60, commands.BucketType.channel)
+    #@commands.cooldown(1, 60, commands.BucketType.channel)
     async def roster(self, ctx, team, season_start_year, season_end_year):
-        forward_list = []
-        defencemen_list = []
-        goalie_list = []
+        forward_list = ['```\n']
+        defencemen_list = ['```\n']
+        goalie_list = ['```\n']
+
+        player_lists = [forward_list, defencemen_list, goalie_list]
 
         team_id = getTeamID(team, int(season_start_year))
         if team_id is None:
@@ -736,51 +830,33 @@ class NHLBot(commands.Cog):
                 if 'teams' in res:
                     for team_dict in res['teams']:
                         for player in team_dict['roster']['roster']:
-                            x = Player(player['person']['fullName'],
-                                       player['position']['code'],
-                                       team)
-                            x.name = player['person']['fullName']
-                            x.position = player['position']['code']
                             if 'jerseyNumber' in player:
-                                x.jersey_number = player['jerseyNumber']
+                                player_string = f"{player['jerseyNumber']:<3}{player['position']['code']} " \
+                                                f"{player['person']['fullName']}\n"
                             else:
-                                pass
+                                player_string = f"{0:<3}{player['position']['code']} {player['person']['fullName']}\n"
                             if player['position']['code'] == "D":
-                                defencemen_list.append(x)
+                                defencemen_list.append(player_string)
                             elif player['position']['code'] == "G":
-                                goalie_list.append(x)
+                                goalie_list.append(player_string)
                             else:
-                                forward_list.append(x)
+                                forward_list.append(player_string)
                 else:
                     await ctx.send(f'I couldn\'t find {team} for the {season_start_year}-{season_end_year} season! '
                                    f'Sorry, blame the NHL. '
                                    f'Or blame yourself if it didn\'t exist then. Your fault.')
                     return
 
-        forwards_string = f"```"
-        defencemen_string = f"```"
-        goalies_string = f"```"
-
-        for forward in forward_list:
-            forwards_string += f"{forward.jersey_number:<3}{forward.position} {forward.name}\n"
-
-        forwards_string += "```"
-
-        for defenceman in defencemen_list:
-            defencemen_string += f"{defenceman.jersey_number:<3}{defenceman.position} {defenceman.name}\n"
-
-        for goalie in goalie_list:
-            goalies_string += f"{goalie.jersey_number:<3}{goalie.position} {goalie.name}\n"
-
-        defencemen_string += "```"
-        goalies_string += "```"
+        forward_list.append("```")
+        defencemen_list.append("```")
+        goalie_list.append("```")
 
         type_list = ['Forwards', 'Defencemen', 'Goalies']
 
-        string_list = [forwards_string, defencemen_string, goalies_string]
         embed_list = []
-
-        for position_type, string in zip(type_list, string_list):
+        
+        for player_list, position_type in zip(player_lists, type_list):
+            string = ''.join(player_list)
             embed = discord.Embed(
                 title=f"{team} {season_start_year}-{season_end_year} {position_type}",
                 description=string
