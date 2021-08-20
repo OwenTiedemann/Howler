@@ -31,80 +31,6 @@ class Period:
         self.away = away
 
 
-# Player class to represent a player, used in nhl team roster and nhl player commands
-class Player:
-    def __init__(self, name, position, team):
-        self.name = name
-        self.position = position
-        self.team = team
-        self.jersey_number = 0
-
-
-class Draftee(Player):
-    def __init__(self, name, position, team, draft_round, pick, pick_history, drafted_from):
-        super().__init__(name, position, team)
-        self.draft_round = draft_round
-        self.pick = pick
-        self.pick_history = pick_history
-        self.drafted_from = drafted_from
-
-
-# Skater class to represent a skater, used in nhl player command
-class Skater(Player):
-    def __init__(self, name, position, team):
-        super().__init__(name, position, team)
-        self.assists = 0
-        self.goals = 0
-        self.pim = 0
-        self.shots = 0
-        self.games = 0
-        self.hits = 0
-        self.power_play_goals = 0
-        self.power_play_points = 0
-        self.faceoff_percentage = 0
-        self.shot_percentage = 0
-        self.game_winning_goals = 0
-        self.overtime_goals = 0
-        self.shorthanded_goals = 0
-        self.shorthanded_points = 0
-        self.plus_minus = 0
-        self.points = 0
-
-    def get_shooting_percentage(self):
-        return (self.goals / self.shots) * 100
-
-
-# Goalie class to represent a goalie, used in nhl player command
-class Goalie(Player):
-    def __init__(self, name, position, team):
-        super().__init__(name, position, team)
-        self.minutes = 0
-        self.wins = 0
-        self.losses = 0
-        self.shutouts = 0
-        self.games_played = 0
-        self.games_started = 0
-        self.minutes_played_add = 0
-        self.minutes_played = 0
-        self.seconds_add = 0
-        self.seconds = 0
-        self.shots_against = 0
-        self.saves = 0
-        self.goals_against = 0
-
-    def set_minutes(self, time_on_ice):  # adds minutes to class variable
-        self.minutes_played_add, self.seconds_add = time_on_ice.split(':')
-        self.minutes_played += int(self.minutes_played_add)
-        self.seconds += int(self.seconds_add)
-
-    def get_save_percentage(self):  # retrieves save percentage by dividing saves by shots against
-        return self.saves / self.shots_against
-
-    def get_goals_against_average(self):  # retrieves GAA by dividing goals against by minutes played
-        self.minutes_played += self.seconds / 60
-        return (self.goals_against * 60) / self.minutes_played
-
-
 def get_nhl_draft_url(year, draft_round, team_id):
     if team_id is None and draft_round == 0:
         return 0
@@ -120,16 +46,6 @@ def get_nhl_draft_url(year, draft_round, team_id):
 def getTeamID(team: str, year: int):
     if team is None:  # returns None if team is none
         return None
-
-    # async with aiohttp.ClientSession() as cs:
-    # async with cs.get("https://statsapi.web.nhl.com/api/v1/teams") as r:
-    # res = await r.json()
-    # for items in res['teams']:
-    # if items['name'] == team or items['abbreviation'] == team:
-    # print(items['id'])
-    # return int(items['id'])
-
-    # if statement tree for team ids, would use the above code, but it doesn't work for defunct teams or different names
 
     if team == "New Jersey Devils" or team == "NJD" or team == "Colorado Rockies" or team == "CLR" \
             or team == "Kansas City Scouts" or team == "KCS":
@@ -464,8 +380,6 @@ async def send_career_stats(ctx, name, player_id, league, extended):
                                 career_stats_dict[key] += minutes_played
                             else:
                                 career_stats_dict[key] += int(value)
-
-    blacklisted_career_types = ['powerPlayTimeOnIce', 'faceOffPct', '']
 
     if 'faceOffPct' in career_stats_dict:
         career_stats_dict.pop('faceOffPct')
@@ -808,7 +722,7 @@ class NHLBot(commands.Cog):
         await ctx.send(embed=embed)
 
     @team.command()
-    #@commands.cooldown(1, 60, commands.BucketType.channel)
+    @commands.cooldown(1, 60, commands.BucketType.channel)
     async def roster(self, ctx, team, season_start_year, season_end_year):
         forward_list = ['```\n']
         defencemen_list = ['```\n']

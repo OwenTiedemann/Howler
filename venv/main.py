@@ -2,8 +2,10 @@ import discord
 from discord.ext import commands
 import motor.motor_asyncio
 import config
+import datetime
 
 intents = discord.Intents.default()
+intents.members = True
 
 bot = commands.Bot(command_prefix=['howler ', 'Howler '], intents=intents)
 database_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongo_db_token)
@@ -13,38 +15,16 @@ bot.player_collection = player_database['Players']
 bot.trivia_database = database_client['database']
 bot.image_database = database_client['images']
 
-initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot', 'jishaku']
+initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot', 'jishaku', 'cogs.OwnerCommands']
 
 whitelisted_channels = ['bot-spam', 'trivia', 'trivia-discussion', 'trivia-setup', 'test-commands', 'game-thread']
 whitelisted_categories = [432008796106391565]
 
-bot.image_commands = []
-
 _cd = commands.CooldownMapping.from_cooldown(1.0, 20.0, commands.BucketType.channel)  # from ?tag cooldown mapping
 
+bot.image_commands = []
 
-@bot.check
-async def restrict_commands(ctx):
-    if ctx.channel.name in whitelisted_channels:
-        return True
-    elif ctx.channel.category.id in whitelisted_categories:
-        return True
-    else:
-        return False
-
-
-@bot.check
-async def cool_down_check(ctx):
-    if ctx.channel.category.id in whitelisted_categories:
-        return True
-    if ctx.channel.name == "game-thread":
-        bucket = _cd.get_bucket(ctx.message)
-        retry_after = bucket.update_rate_limit()
-        if retry_after:
-            raise commands.CommandOnCooldown(bucket, retry_after)
-        return True
-    else:
-        return True
+bot.max_messages = 1000
 
 
 @bot.event
@@ -88,26 +68,49 @@ async def on_command_error(ctx, error):
             f"get to help Roman add a new one! yay! DM him with the command and error and he'll get around to it.")
 
 
-@bot.command()
-@commands.is_owner()
-async def load(ctx, bot_extension):
-    bot.load_extension(f'cogs.{bot_extension}')
-    await ctx.send(f"Loaded the {bot_extension} cog")
+@bot.event
+async def on_message_delete(message):
+    if message.author.id == bot.user.id:
+        return
+    if message.guild.id == 756640701751754812:
+        channel = bot.get_channel(756640703165104179)
+        embed = discord.Embed(
+            title="Deleted Message"
+        )
+        if message.content != "":
+            embed.add_field(name=f"Message Author: {message.author}\nMessage Content:",
+                            value=f"```{message.content}```")
+        else:
+            embed.add_field(name=f"Message author: {message.author}", value=f"Image only message")
+        embed.set_footer(text="Howler")
+        embed.timestamp = datetime.datetime.utcnow()
+        if message.attachments:
+            embed.set_image(url=message.attachments[0])
+        await channel.send(embed=embed)
 
 
-@bot.command()
-@commands.is_owner()
-async def unload(ctx, bot_extension):
-    bot.unload_extension(f'cogs.{bot_extension}')
-    await ctx.send(f"Unloaded the {bot_extension} cog")
+@bot.check
+async def restrict_commands(ctx):
+    if ctx.channel.name in whitelisted_channels:
+        return True
+    elif ctx.channel.category.id in whitelisted_categories:
+        return True
+    else:
+        return False
 
 
-@bot.command()
-@commands.is_owner()
-async def reload(ctx, bot_extension):
-    bot.unload_extension(f'cogs.{bot_extension}')
-    bot.load_extension(f'cogs.{bot_extension}')
-    await ctx.send(f"Reloaded the {bot_extension} cog")
+@bot.check
+async def cool_down_check(ctx):
+    if ctx.channel.category.id in whitelisted_categories:
+        return True
+    if ctx.channel.name == "game-thread":
+        bucket = _cd.get_bucket(ctx.message)
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            raise commands.CommandOnCooldown(bucket, retry_after)
+        return True
+    else:
+        return True
 
 
 if __name__ == '__main__':
