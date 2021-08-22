@@ -37,7 +37,7 @@ async def give_points(name_list, user_collection, correct_answer):
     return {"total": ans_total, "correct": ans_correctly}
 
 
-class TriviaBot(commands.Cog):
+class TriviaBot(commands.Cog, name="Trivia"):
     def __init__(self, bot):
         self.bot = bot
         self.server_info = bot.trivia_database['server_info']

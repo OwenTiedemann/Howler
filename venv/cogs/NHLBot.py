@@ -318,12 +318,15 @@ async def get_player_id(ctx, name):
                     player_id = values[0]
                     break
                 else:
+                    lowercase_list = []
+                    for name in name_list:
+                        lowercase_list.append(name.lower())
                     for player in res['suggestions']:
                         values = player.split("|")
                         name_id_list = values[-1].split('-')
-                        lowercase_list = []
-                        for name in name_list:
-                            lowercase_list.append(name.lower())
+                        if len(lowercase_list) < 3:
+                            player_list.append(values)
+                            continue
                         if lowercase_list[1] == name_id_list[0] and lowercase_list[2] == name_id_list[1]:
                             player_id = values[0]
                             if values not in player_list:
@@ -335,7 +338,7 @@ async def get_player_id(ctx, name):
             description="```\n"
                         "There are at least two people with that exact name, so here they are with their IDs, "
                         "if you see the person you are looking for use\n"
-                        "\"howler nhl player id <command_name> <id> <name> <season_start_year> <season_end_year>\"```"
+                        "\"howler nhl player id <command_name> <id> <name> <command arguments>\"```"
         )
 
         for player in player_list:
@@ -380,6 +383,9 @@ async def send_career_stats(ctx, name, player_id, league, extended):
                                 career_stats_dict[key] += minutes_played
                             else:
                                 career_stats_dict[key] += int(value)
+
+    if league == "National Hockey League":
+        league = "NHL"
 
     if 'faceOffPct' in career_stats_dict:
         career_stats_dict.pop('faceOffPct')
@@ -432,7 +438,7 @@ async def send_career_stats(ctx, name, player_id, league, extended):
     return
 
 
-class NHLBot(commands.Cog):
+class NHLBot(commands.Cog, name="NHL"):
     def __init__(self, bot):
         self.bot = bot
         self.player_collection = bot.player_collection

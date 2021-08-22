@@ -8,7 +8,7 @@ class ImageCommand:
         self.file = file
 
 
-class Images(commands.Cog):
+class Images(commands.Cog, name="Images"):
     def __init__(self, bot):
         self.bot = bot
         self.image_collection = bot.image_database['images']

@@ -57,7 +57,7 @@ def fill_list():
     run_stream()
 
 
-class TweetBot(commands.Cog):
+class TweetBot(commands.Cog, name="Twitter"):
     def __init__(self, bot):
         self.bot = bot
         self.get_twitter_users.start()  # on start up pulls twitter feed data from database
