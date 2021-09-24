@@ -234,7 +234,6 @@ async def send_season_stats(ctx, name, player_id, extended, season_start_year, s
                         embed_list.append(embed)
 
     if not found:
-        print(seasons)
         first_season = seasons[0][:4] + "-" + seasons[0][4:]
         last_season = seasons[len(seasons) - 1][:4] + "-" + seasons[len(seasons) - 1][4:]
         await ctx.send(f'That season isn\'t in the API, try a season between {first_season} and '
@@ -257,7 +256,6 @@ async def send_seasons_stats(ctx, name, player_id, extended):
     async with aiohttp.ClientSession() as cs:  # pulls data from the website
         async with cs.get(player_url) as r:
             res = await r.json()
-            print(res)
             for items in res['stats']:
                 for season in items['splits']:
                     embed = discord.Embed(
@@ -309,7 +307,6 @@ async def get_player_id(ctx, name):
         async with aiohttp.ClientSession() as cs:  # gets the data from the website
             async with cs.get(url) as r:
                 res = await r.json()
-                print(res)
                 if not res['suggestions']:
                     pass
                 elif len(res['suggestions']) == 1:
@@ -363,13 +360,11 @@ async def send_career_stats(ctx, name, player_id, league, extended):
     async with aiohttp.ClientSession() as cs:  # pulls data from the website
         async with cs.get(player_url) as r:
             res = await r.json()
-            print(res)
             for items in res['stats']:
                 career_stats_dict = {}
                 for season in items['splits']:
                     if season['league']['name'] == league:
                         stats = season['stat']
-                        print(f"{season['season']} GAMES: {season['stat']['games']}")
                         for key, value in stats.items():
                             if key in career_stats_dict:
                                 continue
@@ -479,7 +474,6 @@ class NHLBot(commands.Cog, name="NHL"):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as r:
                 res = await r.json()  # returns dict
-                print(res)
                 for record in res['records']:
                     embed = discord.Embed(
                         title=f"{record['division']['name']} division standings"
@@ -594,7 +588,6 @@ class NHLBot(commands.Cog, name="NHL"):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
-                print(res)
                 team = res['teams'][0]
                 team_stats = team['teamStats'][0]
                 for split in team_stats['splits']:
@@ -638,7 +631,6 @@ class NHLBot(commands.Cog, name="NHL"):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
-                print(res)
                 for matchup in res['teams']:
                     if 'nextGameSchedule' in matchup:
                         for schedule in matchup['nextGameSchedule']['dates']:
@@ -698,7 +690,6 @@ class NHLBot(commands.Cog, name="NHL"):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(game_url) as r:
                 res = await r.json()
-                print(res)
                 for period in res['periods']:
                     x = Period(period['ordinalNum'], period['home'], period['away'])
                     period_list.append(x)
@@ -746,7 +737,6 @@ class NHLBot(commands.Cog, name="NHL"):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(team_url) as r:
                 res = await r.json()
-                print(res)
                 if 'teams' in res:
                     for team_dict in res['teams']:
                         for player in team_dict['roster']['roster']:

@@ -14,8 +14,9 @@ player_database = database_client['Players']
 bot.player_collection = player_database['Players']
 bot.trivia_database = database_client['database']
 bot.image_database = database_client['images']
+bot.articles_database = database_client['articlefeeds']
 
-initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot', 'jishaku', 'cogs.OwnerCommands']
+initial_extensions = ['cogs.TweetBot', 'cogs.NHLBot', 'cogs.TriviaBot', 'cogs.ImageBot', 'jishaku', 'cogs.OwnerCommands', 'cogs.webupdates']
 
 whitelisted_channels = ['bot-spam', 'trivia', 'trivia-discussion', 'trivia-setup', 'test-commands', 'game-thread']
 whitelisted_categories = [432008796106391565]
@@ -32,6 +33,8 @@ async def on_message(message):
     x = message.content.lower()
     if 'tocchet' in x:
         await message.add_reaction('\U0001F422')
+    if 'seasoned beef' in x:
+        await message.add_reaction('\U0001F32E')
     if message.content.startswith(("howler ", "Howler ")):
         res = message.content[0].lower() + message.content[1:]
         for command in bot.image_commands:

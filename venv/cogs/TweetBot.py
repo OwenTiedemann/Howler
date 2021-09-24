@@ -85,7 +85,6 @@ class TweetBot(commands.Cog, name="Twitter"):
             tweet = json.loads(status)
             if 'user' in tweet:
                 if str(tweet['user']['id']) in id_list:  # checks if user is one of followed feeds
-                    print(tweet)
                     for user in user_list:  # finds the user object
                         if str(tweet['user']['id']) == user.user_id:
                             user.status = tweet  # sets the objects status
